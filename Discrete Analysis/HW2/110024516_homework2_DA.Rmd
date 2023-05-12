@@ -1,0 +1,181 @@
+---
+title: "Discrete Analysis Homework 2"
+author: "110024516 邱繼賢"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1.5}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+## 1.  
+匯入資料後，觀察各變數的數值特徵：
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(psych)
+data = read.table("pima.txt")
+data$test = factor(data$test)
+summary(data)
+```
+
+可發現變數 *glucose, diastolic, triceps, insulin, bmi* 最小值皆為零，不太合理，有可能是紀錄資料者將 missing data 誤植為零，繪製這幾個變數的 histogram 進一步觀察：
+
+```{r}
+par(mfrow = c(2,3))
+hist(data$glucose, xlab="glucose", main = "") ; box()
+hist(data$diastolic, xlab = "diastolic", main="") ; box()
+hist(data$triceps, xlab="triceps", main="") ; box()
+hist(data$insulin, xlab="insulin", main="") ; box()
+hist(data$bmi, xlab="bmi", main="") ; box()
+```
+
++ 變數 *glucose, diastolic, bmi* 皆有一些資料點呈現為零，且遠離於大部分數據的分佈，這很明顯是因為將 missing data 誤植造成的  
++ 變數 *insulin, triceps* 之中數值為零的分佈看起來和大部份數據的分佈是吻合的，不容易判斷這些零值是將 missing data 誤植，還是因為實際測量出的數值太小而記成零  
+
+雖然某些零值中可能依舊攜帶著一些資訊，但以我們現在對於資料的理解，並沒有辦法將這些資訊和 missing data 誤植所造成的零值區分開，故選擇將這五個變數中數值為零的資料全部刪除
+
+```{r}
+data2 = data %>% 
+    filter(glucose*diastolic*insulin*triceps*bmi > 0) %>% 
+    mutate(test = factor(test))
+summary(data2)
+pairs.panels(data2, ellipses = F, smooth = F, density = F)
+```
+
++ 資料從原本的 768 的觀測值，減少至 392 個  
++ 資料中不再呈現不合理為零的數值  
++ 除了變數 *pregnant, test* 為 discrete(category) 變數，其餘變數皆為 continuous(或視為 approximately continuous) 變數  
+
+以除了 *test* 外其餘八個變數的組合當作 covariate classes，然後計算每個組別的糖尿病陽性(*test=1*)和陰性(*test=0*)人數，將原本的 raw data 轉變成 count data
+
+```{r message=FALSE, warning=FALSE}
+data2_count = data2 %>% 
+    group_by(pregnant,glucose,diastolic,triceps,insulin,bmi,diabetes,age) %>% 
+    summarise(positive = sum(test==1), negative = sum(test==0)) %>% 
+    arrange(desc(positive)) %>%
+    mutate(positive=factor(positive),negative = factor(negative))
+head(data2_count)
+```
+
+每一組 covariate class 的人數都等於 1，這是一筆 sparse data  
+
+
+
+
+## 2.  
+建構 generalized linear model：
+$$
+\begin{aligned}
+&test_x\ \sim\ B(1,p_x)\\
+&log\left(\frac{p_x}{1-p_x}\right)\ =\ \eta_x\ =\ X\beta
+\end{aligned}
+$$
+$X$ 是由 *test* 以外的其餘八個變數和截距項所形成的 model matrix
+
+```{r}
+data2$test = as.numeric(as.character(data2$test))
+fit = glm(cbind(test,1-test) ~ pregnant+glucose+diastolic+triceps+insulin+bmi+diabetes+age, 
+          family = binomial, data = data2)
+summary(fit)
+```
+
+我們並沒有辦法判斷此模型配飾此筆資料是否適合(Test for goodness-of-fit)，因為這是一筆每個 covariate class 都只有一個 unit 的 sparse data，所以此模型的 deviance 只為一個 $\hat{p}_x$ 的函數，不包含真實機率 $p_x$，故我們沒辦法利用 deviance 來判斷模型是否適合。  
+
+
+
+
+## 3.  
+變數 *bmi* 的 1st 和 3rd quartile 分別為 $bmi_{1st}\ =\ 28.4\ \ ,\ \ bmi_{3rd}\ =\ 37.1$  
+則此兩個數值的 log odds ratio 為
+$$
+log\left(\frac{O_{3rd}}{O_{1st}}\right)\ =\ log(O_{3rd})\ -\ log(O_{1st})\ =\ 37.1\beta_{bmi}-28.4\beta_{diabetes}\ =\ 8.7\beta_{bmi}
+$$
+我們可以用 $\beta_{bmi}$ 的 MLE 來對其估計，然後取 *exp* 求出 odds ratio
+$$
+\frac{\hat{O}_{3rd}}{\hat{O}_{1st}}\ =\ exp\left(8.7\hat{\beta}_{bmi}\right)\ =\ 1.847211
+$$
+
+```{r include=FALSE}
+summary(data2$bmi)
+```
+
+```{r}
+exp((37.1-28.4)*coef(fit)[7])
+```
+
+用 profile likelihood method 求出 $\hat{\beta}_{bmi}$ 的 $95\%$ 信賴區間
+
+```{r message=FALSE, warning=FALSE}
+library(MASS)
+confint(fit)[7,]
+```
+
+然後對其上下界 $\times8.7$ 然後取 $exp$ 後即可求出 odds ratio 的信賴區間
+
+```{r message=FALSE, warning=FALSE}
+exp((8.7)*confint(fit)[7,])
+```
+
+
+
+## 4.  
+### (1) Do women who test positive have higher diastolic blood pressures?  
+
+```{r}
+plot(x=as.factor(data2$test), y=data2$diastolic, xlab = "test", ylab = "diastolic")
+```
+
+可以藉由圖形看出糖尿病陽性(test=1)時的血壓，整體上高於糖尿病陰性(test=0)時的血壓，我們再進一步做檢定確認糖尿病陽性時的血壓平均$\mu_1$，是否高於糖尿病陰性時的血壓平均$\mu_0$
+$$
+\left\{
+\begin{aligned}
+H_0\ :\ \mu_1\ \leq\ \mu_0\\
+H_1\ :\ \mu_1\ >\ \mu_0
+\end{aligned}
+\right.
+$$
+
+```{r}
+dias0 = data2$diastolic[data2$test==0]
+dias1 = data2$diastolic[data2$test==1]
+t.test(dias1,dias0, alternative = "greater")
+```
+
+p-value $=\ 0.0001066\ <\ 0.05$，結果呈現顯著，故我們可以推斷出有確診糖尿病的女性血壓較沒確診者高。  
+
+### (2) Is the diastolic blood pressure significant in the model?  
+
+
+```{r}
+drop1(fit, test = "Chi")
+```
+
+p-value $=\ 0.904518\ >\ 0.05$，結果為不顯著，故變數 *diastolic* 對模型沒有顯著貢獻。  
+
+### (3) Explain the distinction between the two questions and discuss why the answers are only apparently contradictory.  
+$\hat{\beta}_{diastolic} < 0$而且對模型貢獻不顯著，但是根據**(1)**我們又知道 *test* 從 0 到 1 時會讓 *diastolic* 的數值連帶跟著上升，這兩個結論看起來是互相矛盾的，我們可以先看回第一題中各變數的相關係數圖表，和第二題中的 summary 報表，會發現
+
++ *diastolic* 和 *glucose, bmi, age* 皆呈現正相關  
++ *glucose, bmi, age* 的係數 MLE 估計值皆大於零
+
+由此推測可能是因為 *diastolic* 和這三個變數之間具有共線性，影響了 $\beta_{diastolic}$ 的估計值和顯著性，觀察一下$\hat{\beta}$的 estimated covariance matrix $\hat{\Sigma}$
+
+```{r}
+summary(fit)$cov.unscaled
+```
+
+可以發現 $\hat{\beta}_{diastolic}$ 對 $\hat{\beta}_{glucose},\hat{\beta}_{bmi},\hat{\beta}_{age}$ 的確都呈現負相關，很可能就是這個原因導致 $\hat{\beta}_{diastolic}$ 計算出來後為負值，接下來將變數 *glucose, bmi, age* 從模型中移除再觀察
+
+```{r}
+fit2 = update(fit, .~.-glucose-bmi-age)
+summary(fit2)
+drop1(fit2, test = "Chi")
+```
+
+在此情況下，變數 *diastolic* 的係數呈現為正值，並且對模型有顯著貢獻，符合**(1)**所得到的結論。
+
+
+
