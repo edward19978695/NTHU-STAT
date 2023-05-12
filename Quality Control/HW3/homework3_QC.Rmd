@@ -1,0 +1,291 @@
+---
+title: "品質管制 Homework3"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+    number_sections: true
+author: "110024516 統研碩一 邱繼賢"
+date: "2021年10月15日"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\textbf{3.11 (i)}
+$\\\alpha = 0.0027, m = 100\\ X_i = 10,15,31,18,24,12,23,15,19,21,16,24,28,15,23,19,14,27,20,18\\\bar{p} = \frac{1}{20}\sum_{i=1}^{20}p_i =  \frac{1}{20}\sum_{i=1}^{20}\frac{X_i}{m} = 0.196$
+
+
+Construct the control limits of the p Chart in Large-Sample Cases: 
+$$\\U = \bar{p} + Z_{1-\frac{\alpha}{2}}\sqrt{\frac{\bar{p}(1-\bar{p})}{m}} \approx 0.3151 $$
+$$C = \bar{p} = 0.196 $$
+$$L = \bar{p} - Z_{1-\frac{\alpha}{2}}\sqrt{\frac{\bar{p}(1-\bar{p})}{m}} \approx 0.0769$$
+
+```{r echo=FALSE, message=FALSE, error=FALSE}
+# (i)
+Xi = c(10,15,31,18,24,12,23,15,19,21,16,24,28,15,23,19,14,27,20,18)
+m = 100
+p_i = Xi/m
+p_bar = mean(p_i)
+U = p_bar + 3*sqrt(p_bar*(1-p_bar)/m) # 0.3151
+C = p_bar # 0.196
+L = p_bar - 3*sqrt(p_bar*(1-p_bar)/m) # 0.0769
+
+# p chart
+i <- seq(1,20)
+
+par(mfcol=c(1,1), mar=c(4,4,1,6))
+
+plot(i,p_i,type="o",lty=1,pch=16,xlab="i",ylab=expression(p[i]),
+     mgp=c(2,1,0),xlim=c(0,20), ylim=c(-0.01,0.35),cex=0.8)
+lines(i,rep(U,length(i)),lty=2,cex=0.8)
+lines(i,rep(C,length(i)),lty=2,cex=0.8)
+lines(i,rep(L,length(i)),lty=2,cex=0.8)
+axis(4,at=c(L,C,U),labels=c("L=0.0769","C=0.196","U=0.3151"),cex=0.8,las=1)
+title("p chart", cex = 0.9)
+```
+The process seems to be in statistical control.
+
+
+\textbf{(ii)}
+$\\\\P(p_i > \bar{p} + Z_{1-\frac{\alpha}{2}}\sqrt{\frac{\bar{p}(1-\bar{p})}{m}}\ |\  \pi = 0.29) \ = \ 0.9\ 
+\Rightarrow\ P(Z\ >\ \frac{\bar{p}-\pi+Z_{1-\frac{\alpha}{2}}\sqrt{\frac{\bar{p}(1-\bar{p})}{m}}}{\sqrt{\frac{\pi(1-\pi)}{m}}})\ =\ 0.9 \\\\ 
+\Rightarrow\ \frac{\bar{p}-\pi+Z_{1-\frac{\alpha}{2}}\sqrt{\frac{\bar{p}(1-\bar{p})}{m}}}{\sqrt{\frac{\pi(1-\pi)}{m}}}\ =\ \frac{(\bar{p}-\pi)\sqrt{m}+Z_{1-\frac{\alpha}{2}}\sqrt{\bar{p}(1-\bar{p})}}{\sqrt{\pi(1-\pi)}}\ 
+=\ \frac{(0.196-0.29)\sqrt{m} + 3\sqrt{0.196(1-0.196)}}{\sqrt{0.29(1-0.29)}}\ =\ Z_{0.1}\\\\
+\Rightarrow\ m\ =\ 355.5331\ \Rightarrow take\ 
+\ m\ =\ 356$
+
+
+
+
+
+
+\textbf{3.13 (i)}
+$\\\alpha = 0.0027, m = 50\\ X_i = 4,3,4,2,4,4,4,2,3,5,5,5,8,1,4,3,6,7,4,4\\\bar{p} = \frac{1}{20}\sum_{i=1}^{20}p_i =  \frac{1}{20}\sum_{i=1}^{20}\frac{X_i}{m} = 0.082$
+
+
+Construct the control limits of the p Chart in Large-Sample Cases: 
+$$\\U = \bar{p} + Z_{1-\frac{\alpha}{2}}\sqrt{\frac{\bar{p}(1-\bar{p})}{m}} \approx 0.1984 $$
+$$C = \bar{p} = 0.082 $$
+$$L = \bar{p} - Z_{1-\frac{\alpha}{2}}\sqrt{\frac{\bar{p}(1-\bar{p})}{m}} \approx -0.0344\ \rightarrow\ 0$$
+```{r echo=FALSE, message=FALSE, error=FALSE}
+x_i = c(4,3,4,2,4,4,4,2,3,5,5,5,8,1,4,3,6,7,4,4)
+m = 50
+p_i = x_i / m
+p_bar = mean(p_i)
+
+U = p_bar + 3*sqrt(p_bar*(1-p_bar)/m) #0.1984
+C = p_bar # 0.082
+L = p_bar - 3*sqrt(p_bar*(1-p_bar)/m)
+L = 0
+
+
+# p chart
+i <- seq(1,20)
+
+par(mfcol=c(1,1), mar=c(4,4,1,6))
+
+plot(i,p_i,type="o",lty=1,pch=16,xlab="i",ylab=expression(p[i]),
+     mgp=c(2,1,0),xlim=c(0,20), ylim=c(-0.01,0.3),cex=0.8)
+lines(i,rep(U,length(i)),lty=2,cex=0.8)
+lines(i,rep(C,length(i)),lty=2,cex=0.8)
+lines(i,rep(L,length(i)),lty=2,cex=0.8)
+axis(4,at=c(L,C,U),labels=c("L=0","C=0.082","U=0.1984"),cex=0.8,las=1)
+title("p chart", cex = 0.9)
+```
+The process seems to be in statistical control.
+
+
+
+
+\newpage
+\textbf{(ii)}
+$\\X_i\ \sim \ Bin(50, 0.082), \ \alpha\ =\ 0.0027,\ m\ =\ 50\\\because\ P(X\ \leq-1)\ =\ 0\ <\ \frac{\alpha}{2}\ \ \ and \ \ \ P(X\ \geq\ 12)\ \approx\ 0.0006\ < \ \frac{\alpha}{2}\\\\\Rightarrow\ L^*\ =\ \frac{max\{a\ :\ P(X\ \leq\ a)\ \leq\ \frac{\alpha}{2}\}}{m}\ =-1\ \rightarrow\ 0\ ,\ \ U^*\ =\ \frac{min\{a\ :\ P(X\ \geq\ a)\ \leq\ \frac{\alpha}{2}\}}{m}\ =\ 0.24$
+
+```{r echo=FALSE, message=FALSE, error=FALSE}
+L_star = qbinom(0.00135, 50, 0.082) / m # L = 0
+U_star = (qbinom(1-0.00135, 50, 0.082)+1) / m # U = 0.24
+
+# p chart
+i <- seq(1,20)
+
+par(mfcol=c(1,1), mar=c(4,4,1,6))
+
+plot(i,p_i,type="o",lty=1,pch=16,xlab="i",ylab=expression(p[i]),
+     mgp=c(2,1,0),xlim=c(0,20), ylim=c(-0.01,0.3),cex=0.8)
+lines(i,rep(U_star,length(i)),lty=2,cex=0.8)
+lines(i,rep(C,length(i)),lty=2,cex=0.8)
+lines(i,rep(L_star,length(i)),lty=2,cex=0.8)
+axis(4,at=c(L_star,C,U_star),labels=c("L=0", "C=0.082", "U=0.24"),cex=0.8,las=1)
+title("p chart", cex = 0.9)
+```
+跟(i)題中的 p chart 相比，下界 L 一樣維持是 0，但上界 U 的數值變大了，因此會導致 $\alpha$ 的數值隨之變小，下一小題將會對此進行計算。
+
+
+
+
+\textbf{(iii)}
+$\\\widetilde{\alpha}\ =\ P(X\ <\ mL^*)\ +\ P(X\ >\ mU^*)\ =\ P(X\ <\ 0)\ +\ P(X\ >\ 12)\ \approx\ 0.000147$
+
+
+
+
+\newpage
+\textbf{(iv)}
+$\\\widetilde{m}\ =\ m\ +\ Z^2_{1-\frac{\alpha}{2}}\ =\ 59\ ,\ \widetilde{p}\ =\ \frac{\bar{X}+Z^2_{1-\frac{\alpha}{2}}/2}{\widetilde{m}}\ \approx\ 0.1458$
+
+
+The control limits of the p chart:
+$$U\ =\ \widetilde{p}\ +\ Z_{1-\frac{\alpha}{2}}\sqrt{\frac{\widetilde{p}(1-\widetilde{p})}{\widetilde{m}}}\ \approx\ 0.2836$$
+$$C\ =\ \widetilde{p}\ \approx\ 0.1458$$
+$$L\ =\ \widetilde{p}\ -\ Z_{1-\frac{\alpha}{2}}\sqrt{\frac{\widetilde{p}(1-\widetilde{p})}{\widetilde{m}}}\ \approx\ 0.0079$$
+```{r echo=FALSE, message=FALSE, error=FALSE}
+# (iv)
+x_bar = mean(x_i)
+m_tuta = m + 9
+p_tuta = (x_bar+9/2)/m_tuta
+U = p_tuta + 3*sqrt(p_tuta*(1-p_tuta)/m_tuta) # U = 0.2836
+C = p_tuta # C = 0.1458
+L = p_tuta - 3*sqrt(p_tuta*(1-p_tuta)/m_tuta) # L = 0.0079
+
+
+i <- seq(1,20)
+
+par(mfcol=c(1,1), mar=c(4,4,1,6))
+
+plot(i,p_i,type="o",lty=1,pch=16,xlab="i",ylab=expression(p[i]),
+     mgp=c(2,1,0),xlim=c(0,20), ylim=c(-0.01,0.3),cex=0.8)
+lines(i,rep(U,length(i)),lty=2,cex=0.8)
+lines(i,rep(C,length(i)),lty=2,cex=0.8)
+lines(i,rep(L,length(i)),lty=2,cex=0.8)
+axis(4,at=c(L,C,U),labels=c("L=0.0079", "C=0.1458", "U=0.2836"),cex=0.8,las=1)
+title("p chart", cex = 0.9)
+```
+從此 p chart 可看出，U、L、C 三個數值跟前兩種 p chart 相比之下皆變大，特別是 C 的數值上升幅度最大，因此幾乎所有的資料都落在 C 值的下方，由此可以推得，此種繪製 p chart 的方法並不適合本題的資料數據。
+
+
+
+
+\newpage
+\textbf{3.16}
+$\\\alpha\ =\ 0.0027\ ,\ c_i\ =\ 10,10,5,10,14,9,16,12,8,10,6,9,13,10,8,9,10,13,10,7\ \ , \bar{c}\ =\ \frac{1}{10}\sum_{i=1}^{10}{c_i}\ =\ 9.95$
+
+
+The control limits of the c chart:
+$$U\ =\ \bar{c}\ +\ Z_{1-\frac{\alpha}{2}}\sqrt{\bar{c}}\ \approx\ 19.4131$$
+$$C\ =\ \bar{c}\ =\ 9.95$$
+$$L\ =\ \bar{c}\ -\ Z_{1-\frac{\alpha}{2}}\sqrt{\bar{c}}\ \approx\ 0.4869$$
+```{r echo=FALSE, message=FALSE, error=FALSE}
+c_i = c(10,10,5,10,14,9,16,12,8,10,6,9,13,10,8,9,10,13,10,7)
+c_bar = mean(c_i)
+
+U = c_bar + 3*sqrt(c_bar) # U = 19.4131
+C = c_bar # C = 9.95
+L = c_bar - 3*sqrt(c_bar) # 0.4869
+
+i <- seq(1,20)
+
+par(mfcol=c(1,1), mar=c(4,4,1,6))
+
+plot(i,c_i,type="o",lty=1,pch=16,xlab="i",ylab=expression(c[i]),
+     mgp=c(2,1,0),xlim=c(0,20), ylim=c(0.4,20),cex=0.8)
+lines(i,rep(U,length(i)),lty=2,cex=0.8)
+lines(i,rep(C,length(i)),lty=2,cex=0.8)
+lines(i,rep(L,length(i)),lty=2,cex=0.8)
+axis(4,at=c(L,C,U),labels=c("L=0.4869", "C=9.95", "U=19.4131"),cex=0.8,las=1)
+title("c chart", cex = 0.9)
+```
+The process producing the plates appears to be in statistical control.
+
+
+\newpage
+\textbf{3.17}
+$\\\alpha\ =\ 0.0027, \ \bar{u}\ =\ \frac{\sum_{i=1}^{10}{c_i}}{\sum_{i=1}^{10}{m_i}}\ \approx\ 0.574$
+
+
+The control limits of the u chart:
+$$U_i\ =\ \bar{u}\ +\ Z_{1-\frac{\alpha}{2}}\sqrt{\frac{\bar{u}}{m_i}}$$
+$$C\ =\ \bar{u}\ \approx\ 0.574$$
+$$L_i\ =\ \bar{u}\ -\ Z_{1-\frac{\alpha}{2}}\sqrt{\frac{\bar{u}}{m_i}}$$
+
+```{r echo=FALSE, message=FALSE, error=FALSE}
+data = read.csv("3-17.csv", header = T)
+data$u = data$c_i / data$m_i
+u_bar = sum(data$c_i) / sum(data$m_i)
+data$U_i = u_bar + 3*sqrt(u_bar/data$m_i)
+C = u_bar # 0.574
+data$L_i = u_bar - 3*sqrt(u_bar/data$m_i)
+
+
+
+i <- seq(1,10)
+
+par(mfcol=c(1,1), mar=c(4,4,1,6))
+
+plot(i,data$u,type="o",lty=1,pch=16,xlab="i",ylab=expression(u[i]),
+     mgp=c(2,1,0),xlim=c(0,10), ylim=c(0,1),cex=0.8)
+
+par(new = T)
+plot(i,data$U_i,type="l",lty=2,pch=16,xlab="i",ylab=expression(u[i]),
+     mgp=c(2,1,0),xlim=c(0,10), ylim=c(0,1), cex=0.8)
+
+lines(i,rep(C,length(i)),lty=2,cex=0.8)
+
+par(new = T)
+plot(i,data$L_i,type="l",lty=2,pch=16,xlab="i",ylab=expression(u[i]),
+     mgp=c(2,1,0),xlim=c(0,10), ylim=c(0,1), cex=0.8)
+
+
+axis(4,at=c(data$U_i[10],C,data$L_i[10]),labels=c("L", "C=0.574", "U"),cex=0.8,las=1)
+title("u chart", cex = 0.9)
+```
+The production process appears to be in statistical control.
+
+
+
+\newpage
+\textbf{3.18}
+$\\ \alpha\ =\ 0.0027, \ w_1\ =\ 0.6, \ w_2\ =\ 0.3, \ w_3\ =\ 0.1\\\bar{c_1}^*\ =\ \frac{1}{20}\sum_{i=1}^{20}{c_{i1}^*}\ =\ 4.5, \ \bar{c_2}^*\ =\ \frac{1}{20}\sum_{i=1}^{20}{c_{i2}^*}\ =\ 9.7, \ \bar{c_3}^*\ =\ \frac{1}{20}\sum_{i=1}^{20}{c_{i3}^*}\ =\ 22.8\\\bar{D}\ =\ \frac{1}{20}\sum_{i=1}^{20}{D_i}\ =\ \frac{1}{20}\sum_{i=1}^{20}{\sum_{j=1}^{3}{w_jc_{ij}^*}}\ =\ \sum_{j=1}^{3}{w_j\bar{c_j}^*}\ =\ 7.89$
+
+
+The control limits of the D chart:
+$$U\ =\ \bar{D}\ +\ Z_{1-\frac{\alpha}{2}}\sqrt{\sum_{j=1}^{3}{w_j^2\bar{c_j}^*}}\ \approx\ 12.8386$$
+$$C\ =\ \bar{D}\ =\ 7.89$$
+$$L\ =\ \bar{D}\ -\ Z_{1-\frac{\alpha}{2}}\sqrt{\sum_{j=1}^{3}{w_j^2\bar{c_j}^*}}\ \approx\ 2.9414$$
+
+```{r echo=FALSE, message=FALSE, error=FALSE}
+data = read.csv("3-18.csv", header = T)
+w1 = 0.6
+w2 = 0.3
+w3 = 0.1
+data$D_i = w1*data$c_i1 + w2*data$c_i2 + w3*data$c_i3
+c1_bar = mean(data$c_i1)
+c2_bar = mean(data$c_i2)
+c3_bar = mean(data$c_i3)
+D_bar = mean(data$D_i)
+var_hat = w1^2*c1_bar + w2^2*c2_bar + w3^2*c3_bar
+
+U = D_bar + 3*sqrt(var_hat) # 12.8386
+C = D_bar # 7.89
+L = D_bar - 3*sqrt(var_hat) # 2.9414
+
+i <- seq(1,20)
+
+par(mfcol=c(1,1), mar=c(4,4,1,6))
+
+plot(i,data$D_i,type="o",lty=1,pch=16,xlab="i",ylab=expression(D[i]),
+     mgp=c(2,1,0),xlim=c(0,20), ylim=c(2,15),cex=0.8)
+lines(i,rep(U,length(i)),lty=2,cex=0.8)
+lines(i,rep(C,length(i)),lty=2,cex=0.8)
+lines(i,rep(L,length(i)),lty=2,cex=0.8)
+axis(4,at=c(L,C,U),labels=c("L=2.9414", "C=7.89", "U=12.8386"),cex=0.8,las=1)
+title("D chart", cex = 0.9)
+```
+The production process appears to be in statistical control.
+
+```{r}
+```
+
