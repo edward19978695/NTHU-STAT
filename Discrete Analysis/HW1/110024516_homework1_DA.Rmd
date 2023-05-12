@@ -1,0 +1,200 @@
+---
+title: "Discrete Analysis Assignment 1"
+author: "110024516 邱繼賢"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1.5}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+### Problem 1.  
+
+首先觀察各變數的數值和圖形特徵：
+
+| 變數名稱   | 變數類型                                    |  變數範圍             |
+|--------|-----------------------------------------|-------------------|
+| sex    | qulitative (nominal)                    | 0=male ; 1=female |
+| status | quantitative (approximately continuous) | 18 ~ 75           |
+| income | quantitative (approximately continuous) | 0.6 ~ 15          |
+| verbal | quantitative (discrete)                 | 1,2,...,10        |
+| gamble | quantitative (approximately continuous) | 0 ~ 156           |
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data = read.table("teengamb.txt")
+data$sex = factor(data$sex)
+
+summary(data)
+library(psych)
+par(mfrow = c(1,1))
+data2 = read.table("teengamb.txt")
+pairs.panels(data2, ellipses = F, density = F)
+```
+
++ 性別男多於女  
++ 變數 *gamble* 和 *income* 皆有著右偏分佈  
++ 變數 *gamble* 有大量的數值為零  
++ 男性在變數 *status* 和 *gamble* 平均皆大於女性  
++ 變數 *income* 和 *gamble* 呈現正相關，可推測收入較高的人可能會投入較多的錢在賭博  
++ *income* 和 *gamble* 的散佈圖資料點多集中在左下角，較不易觀察  
++ 變數 *status* 和 *verbal* 呈現正相關，可推測父母社經地位較高者，語言能力也可能較高  
+
+將變數 *gamble+0.1* 以確保反應變數的數值皆大於零，方便未來進行 Box-Cox transformation，建構模型：
+$$
+model_1\ :\ gamble+0.1\ \sim\ sex\ +\ status\ +\ income\ +\ verbal
+$$
+
+```{r echo=FALSE}
+model1 = lm(gamble+0.1 ~. , data = data)
+summary(model1)
+```
+
++ 變數 *sex* 和 *income* 呈現顯著  
++ $R^2\ =\ 52.67\%$  
+
+接下來對模型做 diagnostic
+
+```{r echo=FALSE}
+par(mfrow = c(2,2))
+plot(model1)
+```
+
++ 第 24 個觀測值的 Cook's statistic 數值偏大，有可能為 influential observation  
+
+對模型做 Box- Cox transformation，檢定是否需要對反應變數做變換
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(MASS)
+par(mfrow = c(1,1))
+boxcox(model1, plotit = T, lambda = seq(0,0.5, by = 0.1))
+```
+
++ $\lambda$ 的 95% 信賴區間並沒有包含 1，應對反應變數做 transformation  
++ 取 $\hat{\lambda}=\frac{1}{5}$ 來做變數變換  
+
+建構模型：
+$$
+model_2\ :\ (gamble+0.1)^{\frac{1}{5}}\ \sim\ sex\ +\ status\ +\ income\ +\ verbal
+$$
+
+```{r echo=FALSE}
+model3 = lm((gamble+0.1)^0.2 ~., data = data)
+summary(model3)
+```
+
++ 所有解釋變數皆呈現顯著  
++ $R^2=52.5\%$ 略小於 $model_1$  
+
+一樣對此模型做 diagnostic
+
+```{r echo=FALSE}
+par(mfrow = c(2,2))
+plot(model3)
+```
+
++ 基本上都沒有觀測值為 influential observation  
++ studentized residual 也符合 normal assumption  
++ residual plot 也沒有 mean curvature 和 non-constant variance  
+
+再進一步對模型的 fitted value 和各變數繪製 residual plot
+
+```{r echo=FALSE}
+rstud = rstandard(model3)
+par(mfrow = c(2,3))
+plot(model3$fitted.values, rstud, xlab="fitted value",ylab="stud. residual") ; abline(h=0)
+plot(data$sex, rstud,xlab="sex",ylab="stud. residual")
+plot(data$status, rstud, xlab="status",ylab="stud. residual") ; abline(h = 0)
+plot(data$income, rstud,xlab="income",ylab="stud. residual") ; abline(h = 0)
+plot(data$verbal, rstud,xlab="verbal",ylab="stud. residual") ; abline(h = 0)
+```
+
++ fitted value 和各變數對 studentized residual 繪圖大致上也都沒有異常  
+
+雖然執行了 Box-Cox transformation 會對反應變數進行變數變換，進而造成模型係數解釋的不易，但由於此模型在各個解釋變數都呈現顯著，以及在 diagnostic 表現皆比 $model_1$ 來得優秀，故決定最終配適模型：
+$$
+\hat{\sqrt[5]{gamble+0.1}}\ =\ \hat{Z}\ =\ 1.3871-0.3563\ sex+0.0105\ status+0.083\ income-0.0982\ verbal
+$$
+
++ 性別由男性變為女性，$Z(=\sqrt[5]{gamble+0.1})$的預測值會隨之減少 *0.3563* 單位  
++ *status* 每上升一單位，*Z*的預測值會隨之上升 *0.0105* 單位  
++ *income* 每上升一單位，*Z*的預測值會隨之上升 *0.083* 單位  
++ *verbal* 每上升一單位，*Z*的預測值會隨之下降 *0.0982* 單位  
+
+選擇一組變數
+$$
+sex\ =\ 0\ ,\ status = 45\ ,\ income\ =\ 10\ ,\ verval\ =\ 7
+$$
+代入模型中求得*Z*的預測值和預測區間上下界，在透過計算 $Z^5-0.1=gamble$ 回推求得變數 *gamble* 的預測值和預測區間
+
+```{r echo=FALSE}
+z1 = predict(model3, data.frame(sex=factor(0),status=45, income=10, verbal=7), interval = "prediction")
+gamble1 = z1^5-0.1
+gamble1
+```
+
++ 此為資料內差的預測($0.6\leq income \leq 15$)  
++ *gamble* 預測值為 $32.2$  
++ 預測區間大小為 $197.17-1.75=195.42$  
+
+選擇另一組變數
+$$
+sex\ =\ 0\ ,\ status = 45\ ,\ income\ =\ 20\ ,\ verval\ =\ 7
+$$
+
+```{r echo=FALSE}
+z2 = predict(model3, data.frame(sex=factor(0),status=45, income=20, verbal=7), interval = "prediction")
+gamble2 = z2^5-0.1
+gamble2
+```
+
++ 此為資料外差的預測($income\geq 15$)  
++ *gamble* 預測值為 $182.62$  
++ 預測區間大小為 $846.01-19.72=826.29$  
+$\Rightarrow$ 外差的預測區間寬度明顯大於內差的  
+
+```{r echo=FALSE}
+grid = seq(0, 100, 0.1)
+par(mfrow = c(1,1))
+p = predict(model3, data.frame(sex=factor(0),status=45, income=grid, verbal=7), se = T, interval = "prediction")
+matplot(grid, p$fit, lty = c(1,2,2), col=c(1,2,3), lwd = 2, type = "l", xlab = "income", ylab = "Z")
+legend("topleft", legend = c("upr","fit","lwr"), col = c(3,1,2), lty = c(2,1,2), lwd = 2)
+rug(data$income)
+```
+
++ 此為*Z*在不同的 *income* 下的預測值和預測區間  
++ 距離資料中心點越遠，預測區間的寬度越大  
+
+
+
+
+### Problem 2.  
+**a.** nominal variable : 政黨之間並沒有根據一個順序大小排列  
+**b.** ordinal variable : 焦慮程度依照其嚴重度遞增排列  
+**c.** interval variable : 病人存活月數為數組已知邊界的區間  
+**d.** nominal variable : 診所地點並沒有根據一個順序大小排列  
+**e.** ordinal variable : 腫瘤對化療的反應依照其根除的程度排列  
+**f.** nominal variable : 喜歡的雜貨店並沒有根據一個順序大小排列  
+
+
+
+### Problem 3.  
+**a.** Let *X* be the random variable of the number of correct answer in 100 questions,  
+where $X\ \sim\ bin(n=100,p=\frac{1}{4})$  
+
+**b.** $E(X)\ =\ np\ =\ 25\ \ ,\ \ \sigma_X\ =\ \sqrt{Var(X)}\ =\ \sqrt{np(1-p)}\ =\ 4.3301$  
+It will be really surprising because $P(X\geq 50)\ =\ \sum\limits_{x=50}^{100}C^{100}_{x}\left(\frac{1}{4}\right)^x\left(\frac{3}{4}\right)^{100-x}\ \approx\ 0$  
+
+**c.** $(n_1\ ,\ n_2\ ,\ n_3\ ,\ n_4)\ \sim\ multinomial\left(n=100\ ,\ p_1=\frac{1}{4}\ ,\ p_2=\frac{1}{4}\ ,\ p_3=\frac{1}{4}\ ,\ p_4=\frac{1}{4}\right)$  
+
+**d.**
+$$
+\begin{aligned}
+&E(n_j)\ =\ np_j\ =\ 25\ \ ,\ \ Var(n_j)\ =\ np_j(1-p_j)\ =\ 18.75\\
+&Cov(n_j,n_k)\ =\ -np_ip_k\ =\ -6.25\ \ ,\ \ Cor(n_j,n_k)\ =\ \frac{Cov(n_j,n_k)}{\sqrt{Var(n_j)\ Var(n_k)}}\ =\ -0.333
+\end{aligned}
+$$
+
+
