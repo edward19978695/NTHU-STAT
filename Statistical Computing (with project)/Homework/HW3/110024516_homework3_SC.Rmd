@@ -1,0 +1,455 @@
+---
+title: "Statistical Computing Homework 3"
+author: "110024516 邱繼賢"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1.5}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+## Problem 1.  
+Define loss function 
+$$
+g(\beta)\ =\ -l(\beta)\ +\ (\text{constant})\ =\ -\sum\limits_{i=1}^ny_i\left(\beta_0+\beta_1x_i\right)\ +\ \sum\limits_{i=1}^ne^{\beta_0+\beta_1x_i}
+$$
+and gradient function
+$$
+g'(\beta)\ =\ \begin{bmatrix}
+\frac{\partial}{\partial\beta_0}g\\
+\frac{\partial}{\partial\beta_1}g
+\end{bmatrix}\ =\ \begin{bmatrix}
+-\sum\limits_{i=1}^ny_i+\sum\limits_{i=1}^ne^{\beta_0+\beta_1x_i}\\
+-\sum\limits_{i=1}^nx_iy_i+\sum\limits_{i=1}^nx_ie^{\beta_0+\beta_1x_i}
+\end{bmatrix}
+$$
+
+### (a) Newton method  
+*\underline{Algorithm}* :  
+
++ Set an initial $\beta^{(0)}\ =\ (3,4)$  
++ Iteratively approximate the solution by :
+$$
+\beta^{(t+1)}\ =\ \beta^{(t)}\ -\ \left[H\left(\beta^{(t)}\right)\right]^{-1}g'\left(\beta^{(t)}\right)\ \ ,\ \ t=0,1,2,...,349
+$$
+where
+$$
+H(\beta)\ =\ \left[\frac{\partial^2}{\partial\beta_0\partial\beta_1}\ g(\beta)\right]\ =\ 
+\begin{bmatrix}
+\sum\limits_{i=1}^ne^{\beta_0+\beta_1x_i} & \sum\limits_{i=1}^nx_ie^{\beta_0+\beta_1x_i}\\
+\sum\limits_{i=1}^nx_ie^{\beta_0+\beta_1x_i} & \sum\limits_{i=1}^nx_i^2e^{\beta_0+\beta_1x_i}
+\end{bmatrix}
+$$
+
++ Check convergence : $||\beta^{(t)}\ -\ \beta^{(t-1)}||\ \rightarrow\ 0$  
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(knitr)
+library(latex2exp)
+data_a = read.csv("DataA.csv")
+g1 = function(para, input = data_a) {
+    y = input[,1]
+    x = input[,2]
+    beta_0 = para[1]
+    beta_1 = para[2]
+    return(-sum(y*(beta_0+beta_1*x))+sum(exp(beta_0+beta_1*x)))
+}
+
+g1.grad = function(para, input = data_a) {
+    y = input[,1]
+    x = input[,2]
+    beta_0 = para[1]
+    beta_1 = para[2]
+    a = -sum(y)+sum(exp(beta_0+beta_1*x))
+    b = -sum(x*y)+sum(x*exp(beta_0+beta_1*x))
+    return(matrix(c(a,b),1,2))
+}
+
+g1.hessian = function(para, input = data_a) {
+    y = input[,1]
+    x = input[,2]
+    beta_0 = para[1]
+    beta_1 = para[2]
+    a = sum(exp(beta_0+beta_1*x))
+    b = sum(x*exp(beta_0+beta_1*x))
+    c = sum(x^2*exp(beta_0+beta_1*x))
+    return(matrix(c(a,b,b,c),2,2))
+}
+
+n.iter = 100
+init = c(3,4)
+
+newton = list(loss = c(g1(init,data_a),rep(0,n.iter)), 
+              loss.grad = rbind(g1.grad(init,data_a),matrix(0,n.iter,2)), 
+              beta = rbind(matrix(init,1,2),matrix(0,n.iter,2)), 
+              se.beta = rbind(matrix(sqrt(diag(solve(g1.hessian(init,data_a)))),1,2), matrix(0,n.iter,2)))
+
+
+for (i in 2:(n.iter+1)) {
+    hessian_inverse = solve(g1.hessian(newton$beta[i-1,]))
+    gradient = g1.grad(newton$beta[i-1,])
+    beta = matrix(newton$beta[i-1,],2,1) - hessian_inverse %*% matrix(newton$loss.grad[i-1,],2,1)
+    newton$loss[i] = g1(beta)
+    newton$loss.grad[i,] = g1.grad(beta)
+    newton$beta[i,] = beta
+    newton$se.beta[i,] = sqrt(diag(solve(g1.hessian(beta))))
+}
+```
+
+
+```{r}
+diff(newton$beta)[n.iter,]
+```
+
+Then, we can show the result of MLE and their standard error (square root of the diagonal terms of $H^{-1}$)
+
+```{r echo=FALSE}
+result = data.frame(beta_0 = newton$beta[n.iter+1,1], se.beta_0 = newton$se.beta[n.iter+1,1], 
+                    beta_1 = newton$beta[n.iter+1,2], se.beta_1 = newton$se.beta[n.iter+1,2])
+kable(result, col.names = c("$\\hat{\\beta_0}$", "$s.e.(\\hat{\\beta_0})$", 
+                            "$\\hat{\\beta_1}$", "$s.e.(\\hat{\\beta_1})$"))
+```
+
+
+```{r echo=FALSE}
+par(mfrow = c(1,2))
+ts.plot(newton$loss, lwd = 2, xlab = "iteration", ylab = "loss")
+ts.plot(newton$loss.grad, col = 1:2, lwd = 2, xlab = "iteration", ylab = "loss grad.")
+legend("topright", 
+       legend = c(TeX("$\\partial g/\\partial\\beta_0$"), TeX("$\\partial g/\\partial\\beta_1$")), 
+       col = 1:2, lwd = 2)
+```
+
+We can see that *loss function* is decreasing as iterating, and converges to a small value after about the $10^{th}$ iteration. The both two *gradient functions* converge to zero after about the $10^{th}$ iteration.
+
+```{r echo=FALSE}
+ts.plot(newton$beta, col = 1:2, lwd = 2, xlab = "iteration", ylab = "beta estimates")
+legend("right", legend = c(TeX("$\\hat{\\beta}_0$"), TeX("$\\hat{\\beta}_1$")), col = 1:2, lwd = 2)
+```
+
+We can see that $(\beta_0\ ,\ \beta_1)$ converge to two stable values after about the $10^{th}$ iteration.
+
+
+Let's try another method by using funcition *optim()* in order to check whether the results are similar  
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+fit1 = optim(init, fn = g1, method="L-BFGS-B", input = data_a, hessian = T)
+kable(data.frame(a=fit1$par[1],b=sqrt(diag(solve(fit1$hessian)))[1],
+                 c=fit1$par[2],d=sqrt(diag(solve(fit1$hessian)))[2]), 
+      col.names = c("$\\hat{\\beta_0}$", "$\\hat{\\beta_1}$", 
+                    "$s.e.(\\hat{\\beta_0})$", "$s.e.(\\hat{\\beta_1})$"))
+```
+
+We can see that the two results are approximately the same.  
+
+### (b) Gradient descent  
+*\underline{Algorithm}* :  
+
++ Set an initial $\beta^{(0)}\ =\ (3,4)$  
++ Iteratively approximate the solution by :
+$$
+\beta^{(t+1)}\ =\ \beta^{(t)}\ -\ \alpha_t\ g'\left(\beta^{(t)}\right)\ \ ,\ \ t=0,1,2,...,498
+$$
+where $\alpha_t\ =\ 0.00002$
+
+Let's check the convergence of *loss function* and *gradient function*
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+g1.grad = function(para, input) {
+    y = input[,1]
+    x = input[,2]
+    beta_0 = para[1]
+    beta_1 = para[2]
+    a = -sum(y)+sum(exp(beta_0+beta_1*x))
+    b = -sum(x*y)+sum(x*exp(beta_0+beta_1*x))
+    return(matrix(c(a,b),1,2))
+}
+
+n.iter = 500
+learn.rate = 0.00002
+beta.hat = matrix(0, n.iter, 2)
+loss = c()
+loss.grad = matrix(0,n.iter,2)
+init = c(3,4)
+
+loss[1] = g1(init, data_a)
+beta.hat[1,] = init
+loss.grad[1,] = g1.grad(init,data_a)
+
+for(i in 2 : n.iter) {
+    beta.hat[i,] = beta.hat[i-1,] - learn.rate*loss.grad[i-1,]
+    loss.grad[i,] = g1.grad(beta.hat[i,], data_a)
+    loss[i] = g1(beta.hat[i,], data_a)
+}
+
+
+par(mfrow = c(1,2))
+ts.plot(loss, xlab="iteration", ylab="loss", lwd = 2)
+ts.plot(loss.grad, col = 1:2, xlab = "iteration", ylab = "loss grad.", lwd = 2)
+legend("topright", 
+       legend = c(TeX("$\\partial g/\\partial\\beta_0$"), TeX("$\\partial g/\\partial\\beta_1$")), 
+       col = 1:2, lwd = 2)
+```
+
+We can see that *loss function* is decreasing as iterating, and converges to a small value after about the $200^{th}$ iteration. The both two *gradient functions* converge to zero after about the $300^{th}$ iteration.  
+
+And then check the convergence of $\beta$  
+
+```{r echo=FALSE}
+ts.plot(beta.hat, col=1:2, lwd = 2, xlab="iteration", ylab="beta estimates")
+legend("topright", legend = c(TeX("$\\hat{\\beta}_0$"), TeX("$\\hat{\\beta}_1$")), col = 1:2, lwd = 2)
+```
+
+We can see that $(\beta_0\ ,\ \beta_1)$ converge to two stable values after about the $400^{th}$ iteration.  
+Compute the difference between $\left(\beta_0^{(498)}\ ,\ \beta_1^{(498)}\right)$ and $\left(\beta_0^{(499)}\ ,\ \beta_1^{(499)}\right)$
+
+
+```{r}
+diff(beta.hat)[n.iter-1,]
+```
+
+They are both really closed to zeros, so we can say that $\beta$ is already converge.  
+
+```{r echo=FALSE}
+kable(data.frame(a = beta.hat[500,1],b = beta.hat[500,2]), 
+      col.names = c("$\\hat{\\beta_0}$", "$\\hat{\\beta_1}$"))
+```
+
+
+
+
+
+## Problem 2.  
+Compute log-likelihood function
+$$
+\begin{aligned}
+l(\alpha\ ,\ \beta\ ;\ x\ ,\ y)\ &=\ -\frac{n}{2}log(2\pi)\ -\ \frac{1}{2}\sum\limits_{i=1}^nlog\left(\sigma_i^2\right)\ -\ \frac{1}{2}\sum\limits_{i=1}^n\frac{\left(y_i-\mu_i\right)^2}{\sigma_i^2}\\
+&=\ -\frac{n}{2}log(2\pi)\ -\ \frac{1}{2}\sum\limits_{i=1}^n\left(\alpha_0+\alpha_1x_i\right)\ -\ \frac{1}{2}\sum\limits_{i=1}^n\left(y_i-\beta_0-\beta_1x_i\right)^2\ e^{-\alpha_0-\alpha_1x_i}
+\end{aligned}
+$$
+Define *loss function*
+$$
+g(\alpha\ ,\ \beta)\ =\ -2l(\alpha\ ,\ \beta)\ +\ (\text{constant})\ =\ \sum\limits_{i=1}^n\left(\alpha_0+\alpha_1x_i\right)\ +\ \sum\limits_{i=1}^n\left(y_i-\beta_0-\beta_1x_i\right)^2\ e^{-\alpha_0-\alpha_1x_i}
+$$
+
+*\underline{Algorithm}* :  
+
+(1) Set an initial $\alpha^{(0)}\ =\ \left(\alpha_0^{(0)}\ ,\ \alpha_1^{(0)}\right)\ =\ (1,2)$  
+(2) Iteratively compute
+$$
+\begin{aligned}
+&\beta^{(t)}\ =\ arg\ min_{\beta}\ g\left(\alpha^{(t)}\ ,\ \beta\right)\\
+&\alpha^{(t+1)}\ =\ arg\ min_\alpha\ g\left(\alpha\ ,\ \beta^{(t)}\right)
+\end{aligned}
+$$
+for $t=1,2,...,99$  
+(3) Checking whether
+$$
+\begin{aligned}
+&||\alpha^{(t+1)}\ -\ \alpha^{(t)}||\ \rightarrow\ 0\\
+&||\beta^{(t+1)}\ -\ \beta^{(t)}||\ \rightarrow\ 0
+\end{aligned}
+$$
+
+```{r echo=FALSE}
+data_b = read.csv("DataB.csv")
+g2 = function(alpha, beta) {
+    x = data_b$lstat
+    y = data_b$medv.log
+    alpha_0 = alpha[1]
+    alpha_1 = alpha[2]
+    beta_0 = beta[1]
+    beta_1 = beta[2]
+    return(sum(alpha_0+alpha_1*x)+sum((y-beta_0-beta_1*x)^2*exp(-alpha_0-alpha_1*x)))
+}
+n.iter = 100
+alpha_init = c(1,2)
+g2_cond_alpha = function(beta) {
+    g2(alpha_init,beta)
+}
+fit1 = optim(alpha_init, g2_cond_alpha, method="L-BFGS-B")
+beta_init = fit1$par
+
+cd_method = list(alpha = rbind(alpha_init, matrix(0,n.iter,2)), 
+                 beta = rbind(beta_init, matrix(0,n.iter,2)), 
+                 loss = c(g2(alpha_init,beta_init), rep(0,n.iter)))
+for (i in 2:(n.iter+1)) {
+    g2_cond_beta = function(alpha) {
+        g2(alpha, cd_method$beta[i-1,])
+    }
+    cd_method$alpha[i,] = optim(cd_method$alpha[i-1,], g2_cond_beta, method="L-BFGS-B")$par
+    g2_cond_alpha = function(beta) {
+        g2(cd_method$alpha[i,], beta)
+    }
+    cd_method$beta[i,] = optim(cd_method$beta[i-1,], g2_cond_alpha, method="L-BFGS-B")$par
+    cd_method$loss[i] = g2(cd_method$alpha[i,], cd_method$beta[i,])
+}
+```
+
+
+```{r}
+diff(cd_method$alpha)[n.iter,]
+diff(cd_method$beta)[n.iter,]
+```
+
+
+```{r echo=FALSE}
+ts.plot(cd_method$loss, lwd = 2, xlab = "iteration", ylab = "loss")
+```
+
+We can see that *loss function* is decreasing as iterating, and converges to a small value after about the $10^{th}$ iteration.
+
+```{r echo=FALSE}
+par(mfrow = c(1,2))
+ts.plot(cd_method$alpha, col = 1:2, lwd = 2, xlab = "iteration", ylab = "alpha estimates")
+legend("topright", legend = c(TeX("$\\alpha_0$"), TeX("$\\alpha_1$")), col = 1:2, lwd = 2)
+ts.plot(cd_method$beta, col = 1:2, lwd = 2, xlab = "iteration", ylab = "beta estimates")
+legend("right", legend = c(TeX("$\\beta_0$"), TeX("$\\beta_1$")), col = 1:2, lwd = 2)
+```
+
+We can see that both $(\alpha_0\ ,\ \alpha_1)$ and $(\beta_0\ ,\ \beta_1)$ converge to two stable values after about the $20^{th}$ iteration.  
+
+The MLE of $(\alpha\ ,\ \beta)$ are show as below
+
+```{r echo=FALSE}
+table = data.frame(alpha_0 = cd_method$alpha[n.iter+1,1], alpha_1 = cd_method$alpha[n.iter+1,2], 
+                   beta_0 = cd_method$beta[n.iter+1,1], beta_1 = cd_method$beta[n.iter+1,2])
+kable(table, col.names = c("$\\hat{\\alpha}_0$", "$\\hat{\\alpha}_1$", "$\\hat{\\beta}_0$", "$\\hat{\\beta}_1$"))
+```
+
+
+
+
+## Problem 3.  
+Define
+$$
+L_p(\beta\ ,\ \delta\ ,\ \lambda)\ =\ \frac{1}{2}||y-\beta||^2\ +\ \tau\ |\delta|\ +\ \lambda'(D\beta\ -\ \delta)\ +\ \frac{\rho}{2}||D\beta\ -\ \delta||^2
+$$
+*\underline{Algorithm}* :  
+(1) $\beta^{(t+1)}\ =\ \text{arg}\ min\ L_p\left(\beta\ ,\ \delta^{(t)}\ ,\ \lambda^{(t)}\right)$
+$$
+\Rightarrow\ \beta\ \leftarrow\ \left(I+\rho D'D\right)^{-1}\left[y+\rho D'(\delta-\lambda/\rho)\right]
+$$
+
+(2) $\delta^{(t+1)}\ =\ \text{arg}\ min\ L_p\left(\beta^{(t+1)}\ ,\ \delta\ ,\ \lambda^{(t)}\right)$
+$$
+\Rightarrow\ \delta\ \leftarrow\ S_{\frac{\tau}{\rho}}\left(D\beta\ +\ \lambda/\rho\right)
+$$
+
+(3) $\lambda^{(t+1)}\ \leftarrow\ \lambda^{(t)}\ +\ \rho(D\beta\ -\ \delta)$
+
+
+
+Take $\tau\ =\ 1\ ,\ \rho\ =\ 0.1$ for example : 
+
+```{r echo=FALSE}
+soft_threshold = function(a, threshold) {
+    sign(a)*max(0, abs(a)-threshold)
+}
+soft_threshold = Vectorize(soft_threshold)
+
+admm.3 = function(yvec, tau=1, rho=0.01, eps.conv=0.001, iter.max=100) {
+    n = length(yvec)
+    beta.all = beta = rep(mean(yvec),n)
+    delta = delta.all = matrix(0,n-2,1)
+    lambda = lambda.all = matrix(0,n-2,1)
+    count = 0
+    
+    D = cbind(diag(n-2),0,0) - 2*cbind(0,diag(n-2),0) + cbind(0,0,diag(n-2))
+    IDtD_inv = solve(diag(n)+rho*t(D)%*%D)
+    loss = loss.all = 0.5*sum((yvec-beta)^2) + tau*sum(abs(D%*%beta))
+    err.all = c()
+    
+    repeat {
+        beta = IDtD_inv%*%(yvec+rho*t(D)%*%(delta-lambda/rho))
+        delta = soft_threshold(D%*%beta+lambda/rho, tau/rho)
+        lambda = lambda + rho*(D%*%beta-delta)
+        beta.all = cbind(beta.all, beta)
+        delta.all = cbind(delta.all, delta)
+        lambda.all = cbind(lambda.all, lambda)
+        count = count+1
+        loss1 = 0.5*sum((yvec-beta)^2) + tau*sum(abs(D%*%beta))
+        loss.all = cbind(loss.all, loss1)
+        err = max(abs(beta-beta.all[,count]))
+        err.all = c(err.all, err)
+        
+        if (err < eps.conv | count > iter.max) break
+    }
+    
+    return(list(count=count, beta=beta.all, lambda=lambda.all, 
+                delta=delta.all, err=err.all, loss=loss.all))
+}
+
+data.3 = read.csv("DataC.csv")
+```
+
+
+```{r}
+tmp = admm.3(data.3$yt, tau=1, rho=0.1, eps.conv = 0.001, iter.max = 5000)
+tmp$count
+```
+
+Iterate for 122 times to comverge
+
+
+```{r echo=FALSE}
+idx = 31:60
+col.idx = rep(1,100)
+col.idx[idx] = 2
+ts.plot(t(tmp$beta), col = col.idx, main = "beta")
+```
+
+$\beta$ converges to stable values after about 60th iteration.  
+
+
+```{r echo=FALSE}
+ts.plot(t(tmp$delta), col = col.idx, main = "delta")
+```
+
+$\delta$ converges to stables values after about 110th iterations.  
+
+
+```{r echo=FALSE}
+ts.plot(t(tmp$lambda), col=col.idx, main="lambda")
+```
+
+$\lambda$ converges to stable values after about 100th iteration.  
+
+
+```{r echo=FALSE}
+ts.plot(tmp$err, main="max change on beta (check convergence)")
+```
+
+Error converge to 0 after about 60th iteration.  
+
+
+```{r echo=FALSE}
+ts.plot(tmp$loss[-1], ylab = "loss")
+```
+
+Loss function discreases to a stable value after about 80th iteration.  
+
+
+
+```{r echo=FALSE}
+ts.plot(cbind(data.3$yt, tmp$beta[,tmp$count+1]), col = 1:2)
+legend("topright", legend=c("observation y", "beta estimates"), col=1:2, lwd=2, lty=1, bty="n")
+```
+
+Our estimated $\beta$ fit the observations well.  
+
+
+
+
+
+```{r}
+```
+
+
+```{r}
+```
+
