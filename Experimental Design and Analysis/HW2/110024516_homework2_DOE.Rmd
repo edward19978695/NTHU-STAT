@@ -1,0 +1,150 @@
+---
+title: "Experimental Design and Analysis Homework 2"
+author: "110024516 邱繼賢"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1.5}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+## Problem 1.  
+### (a)  
+繪製 $y_i-0.44x_i$ 對 *index* 的 residual plot
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+rainfall = read.table("rainfall.txt", header = T)
+rainfall = rainfall %>% mutate(res = y-0.44*x, fit = 0.44*x)
+plot(rainfall$res, ylab = "residual") ; abline(h = 0, lwd = 2, col = 2)
+```
+
+從此 residual plot 中看出，大部分的 residual($y_i-0.44x_i$) 都大於零，可以推論出無截距項的模型 $y\ =\ 0.44x$ 將某種正值的**規律**給當作**隨機**加進了 residual 之中，導致 residual 的 mean 並不等於零。  
+
+### (b)  
+首先建構無截距項的模型 *model1* 
+$$
+y_i\ =\ \beta_1x_i\ +\ \epsilon_i
+$$
+
+```{r}
+fitb.1 = lm(y ~ x -1 , data = rainfall)
+summary(fitb.1)
+```
+
++ $R^2\ =\ 99.46\%$ 非常高，但是此為無截距項的模型，$R^2$ 數值並沒有意義  
++ $\hat{\sigma}\ =\ 0.07106$  
++ $\beta_1$ 對此模型有顯著貢獻，以下再進一步檢定其是否 $=0.44$  
+
+檢定：
+$$
+\left\{
+\begin{aligned}
+H_0\ :\ \beta_1\ =\ 0.44\\
+H_1\ :\ \beta_1\ \neq\ 0.44
+\end{aligned}
+\right.
+$$
+
+```{r}
+fitb.1_test = lm(y ~ offset(0.44*x)-1, data = rainfall)
+anova(fitb.1_test, fitb.1)
+```
+
+$\Rightarrow\ \text{pvalue}\ =\ 0.001105\ <\ 0.05$，$\beta_1$ 顯著不等於 0.44，這與我們根據理論得出的比例係數 0.44 有所不合，再加上**(a)**中我們所做出的結論，可以推斷出無截距項的模型並不適合此筆資料，其中有一些規律被我們給忽略了。  
+
+再來建構有截距項的模型 *model2*
+$$
+y_i\ =\ \beta_0\ +\ \beta_1x_i\ +\ \epsilon_i
+$$
+
+```{r}
+fitb.2 = lm(y ~ x, data = rainfall)
+summary(fitb.2)
+```
+
++ $R^2\ =\ 99.06\%$ 表現得非常好  
++ $\hat{\sigma}\ =\ 0.06668$ 小於前一個模型的 $\hat{\sigma}$  
++ $\beta_0,\beta_1$ 皆呈現顯著不為零  
+
+一樣進行檢定：
+$$
+\left\{
+\begin{aligned}
+H_0\ :\ \beta_1\ =\ 0.44\\
+H_1\ :\ \beta_1\ \neq\ 0.44
+\end{aligned}
+\right.
+$$
+
+```{r}
+fitb.2_test = lm(y ~ offset(0.44*x), data = rainfall)
+anova(fitb.2_test, fitb.2)
+```
+
+$\Rightarrow\ \text{pvalue}\ =\ 0.5327\ >\ 0.05$，故可以推斷 $\beta_1$ 和 0.44 並沒有顯著差異，符合我們使用理論所推導出的比例係數 0.44
+
+
+### (c)  
+根據**(a),(b)**所做出的結論，我會選擇使用加入了截距項的模型 *model2*
+$$
+\hat{y_i}\ =\ 0.035787\ +\ 0.443652x_i
+$$
+
+
+\newpage
+## Problem 2.  
+### (a)  
+
+```{r message=FALSE, warning=FALSE}
+gas = read.table("Gasoline.txt", header = T)
+library(psych)
+pairs.panels(gas, ellipses = F)
+```
+
++ x1 (汽油稅)和 y (汽油消耗量)呈現負相關，相關係數 $=\ -0.35$  
++ x2 (人均收入)和 y (汽油消耗量)呈現負相關，相關係數 $=\ -0.49$  
++ x3 (鋪設高速公路長)和 y (汽油消耗量)呈現些微正相關，相關係數 $=\ 0.17$  
++ x4 (持牌司機人數)和 y (汽油消耗量)呈現正相關，相關係數 $=\ 0.4$  
++ x1,x2,x3,x4 四個變數之間的相關係數數值並不高，推測在做模型時不會產生嚴重的共線性狀況  
+
+### (b)  
+建構模型
+$$
+y\ =\ \beta_0\ +\ \beta_1x_1\ +\ \beta_2x_2\ +\ \beta_3x_3\ +\ \beta_4x_4\ +\ \epsilon
+$$
+
+```{r}
+fit_14 = lm(y ~ x1+x2+x3+x4, data = gas)
+summary(fit_14)
+```
+
++ 變數 x1,x2,x4 對 response y 有顯著影響  
+
+### (c)  
+(1) 直觀判斷上會認為隨著汽油稅收(x1)增加，相對應的汽油消耗量(y)會跟著有所減少(負相關)，而回歸模型的係數(-6.2927)，和兩變數的相關係數(-0.35)也都呈現為負值，符合直觀。  
+(2) 直觀判斷上會認為隨著人均收入(x2)增加，相對應的汽油消耗量(y)也會跟著上升(正相關)，但是實際做回歸模型的係數(-6.1718)，和兩變數的相關係數(-0.49)皆呈現為負值，與直觀上有所衝突，可能的原因是在人均收入較高的地區，交通壅塞，大部分的人都選擇使用大眾運輸工具，反而減少了汽油的消耗量，但實際造成此現象的原因是否如此，還需要更多資訊才能下定論。  
+(3) 直觀判斷上會認為隨著鋪設的高速公路長(x3)或是持牌司機的人數(x4)增加，相對應的汽油消耗量(y)也會有所增加(正相關)，而回歸模型的兩係數(0.2766,0.5210)，以及兩組變數各自的相關係數(0.17,0.4)也都呈現為正值，符合直觀。  
+
+
+### (e)  
+
+將模型的 studentized residual 對 fitted value, x1, x2, x3, x4 各自繪製 residual plot
+
+```{r}
+par(mfrow = c(2,3))
+rstud = rstandard(fit_14)
+plot(fit_14$fitted.values, rstud, xlab = "fitted value", ylab = "residual") ; abline(h = 0, col = 2)
+plot(gas$x1, rstud, xlab = "x1", ylab = "residual") ; abline(h = 0, col = 2)
+plot(gas$x2, rstud, xlab = "x2", ylab = "residual") ; abline(h = 0, col = 2)
+plot(gas$x3, rstud, xlab = "x3", ylab = "residual") ; abline(h = 0, col = 2)
+plot(gas$x4, rstud, xlab = "x4", ylab = "residual") ; abline(h = 0, col = 2)
+```
+
++ 變數 x2 和 x3 所對應的 residual plot 看起來皆有著 non-constant variance，可以考慮使用 weighted least square 來重新建構模型  
++ 其他變數和 fitted value 所對應的 residual plot 看起來並沒有明顯的 non-constant variance 或是 mean curvature
+
+
+
