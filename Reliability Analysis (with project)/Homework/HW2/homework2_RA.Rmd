@@ -1,0 +1,411 @@
+---
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1.5}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+## Problem 2  
+### (a)  
+Compute 
+$$
+\begin{aligned}
+&\hat{F}(t_i)\ =\ \frac{\sum_{j=1}^id_j}{130}\\
+&s.e.(\hat{F}(t_i))\ =\ \sqrt{\frac{\hat{F}(t_i)\times\left(1-\hat{F}(t_i)\right)}{130}}
+\end{aligned}
+$$
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(dplyr)
+library(knitr)
+chainlink = read.csv("ChainLink.csv")
+chainlink = chainlink %>% 
+    mutate(Fi = c(1/130,2/130,3/130,4/130,5/130,6/130,7/130,8/130,10/130,10/130)) %>% 
+    mutate(se_Fi = sqrt(Fi*(1-Fi)/130))
+kable(chainlink[,c(1,4,5)], col.names = c("$t_i$","$\\hat{F}(t_i)$","$s.e.(\\hat{F}(t_i))$"), digits = 4)
+```
+
+### (b)  
+By Wald method : 
+$$
+\begin{aligned}
+\hat{F}_L(t_i)\ =\ \hat{F}(t_i)\ -\ Z_{0.95}\sqrt{\frac{\hat{F}(t_i)\left(1-\hat{F}(t_i)\right)}{130}}\\
+\hat{F}_U(t_i)\ =\ \hat{F}(t_i)\ +\ Z_{0.95}\sqrt{\frac{\hat{F}(t_i)\left(1-\hat{F}(t_i)\right)}{130}}
+\end{aligned}
+$$
+
+```{r echo=FALSE}
+chainlink = chainlink %>% 
+    mutate(lower = Fi-qnorm(0.95)*se_Fi, upper = Fi+qnorm(0.95)*se_Fi, length = upper-lower)
+kable(chainlink[,c(1,4,6,7,8)], 
+      col.names = c("$t_i$","$\\hat{F}(t_i)$","$\\hat{F}_L(t_i)$","$\\hat{F}_U(t_i)$","$\\hat{F}_U(t_i)-\\hat{F}_L(t_i)$"), 
+      digits = 4)
+```
+
++ 可以看出 interval 的長度隨著 $\hat{F}(t_i)$ 越接近 0.5 而越長，代表對該機率的預測越不精準  
++ 前兩個信賴區間的下界為負值，這是使用 Wald method 時候的一個缺點，我們可以選擇將那些下界設為零，或是先進行 logit transformation 後再計算 interval 即可避免此現象  
+
+
+### (c)  
+$$
+\begin{aligned}
+&\hat{p}_1=\frac{1}{130}\ ,\ \hat{p}_2=\frac{1}{129}\ ,\ \hat{p}_3=\frac{1}{128}\ \ \Rightarrow\ \ 1-\hat{p}_1=\frac{129}{130}\ ,\ 1-\hat{p}_2=\frac{128}{129}\ ,\ 1-\hat{p}_3=\frac{127}{128}\\
+\end{aligned}
+$$
+and
+$$
+\hat{S}(t_i)\ =\ \prod\limits_{j=1}^i\left(1-\hat{p}_j\right)\ \Rightarrow\ \hat{S}(t_1)=\frac{129}{130}\ ,\ \hat{S}(t_2)=\frac{128}{130}\ ,\ \hat{S}(t_3)=\frac{127}{130}
+$$
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+chainlink = chainlink %>% 
+    mutate(Si = c(129/130,128/130,127/130,126/130,125/130,124/130,123/130,122/130,120/130,120/130)) %>% 
+    mutate(Fi_2 = 1-Si)
+kable(chainlink[1:3,c(1,4,9,10)], col.names = c("$t_i$","$\\hat{F}(t_i)$","$\\hat{S}(t_i)$","$1-\\hat{S}(t_i)$"), 
+      digits = 4)
+```
+
+由此方法所計算出的 $\hat{F}(t_i)\ =\ 1-\hat{S}(t_i)$ 和 $\hat{F}(t_i)\ =\ \frac{\sum_{j=1}^id_j}{130}$ 所計算出的估計值一樣
+
+
+### (d)  
+如果將每次紀錄的間隔減少，可以增加我們資料的精準度，讓我們更明確的知道單位是在哪一個更精準的 interval censored data，但同時也會大幅的增加實驗成本，在此筆資料中的時間區間設計幾乎可以將每個 interval censored data 給單獨區分開來，由此可見我們每 1000 個 cycles 做一次紀錄已經足夠精準了，除了 $t_i\ =\ 78$ 的那個 interval，可以看到在該區間中有兩個 censored datas，如若我們將時間區間調整得更精準，則有可能區分出那兩筆資料的差別。  
+像是此筆資料的 interval censored data 存在著一個問題，就是我們無法準確得知單位到底是在時間區間中的哪一個點 fail，然而隨著時間區間的縮小，可以逐漸提升我們的準確度，所以要考慮實驗成本以及所需資料要有多準確來決定時間區間大小。  
+
+
+### (e)  
+如果我們只從一、兩個 heats 中選出我們的單位，所做出的結果可能無法代表著整體的特徵，計算出的結果會被那一、兩個 heats 本身的變異所 bias，進而混淆我們想要的結果。  
+
+### (f)  
+我們無法確定此實驗所使用的機台，是否會因為使用的次數而造成它本身的影響，例如：使用比較久之後的機台可能轉速下降，使得我們記錄到的次數低於實際旋轉的次數，導致資料紀錄上的錯誤，若是有提供給我們實驗順序的資訊，則可以將這些變數考慮進去。
+
+
+
+
+
+
+
+
+\newpage
+## Problem 3  
+### (a)  
+$$
+\hat{F}(t_i)\ =\ \frac{\sum_{j=1}^id_j}{25}
+$$
+
+```{r echo=FALSE}
+electro = data.frame(ti = c(5,21,28,30), 
+                     di = c(1,1,1,0), 
+                     ri = c(0,0,0,22), 
+                     ni = c(25,24,23,22), 
+                     Fi = c(1/25,2/25,3/25,3/25))
+kable(electro[,c(1,2,3,5)], col.names = c("thousand cycles", "$d_i$", "$r_i$", "$\\hat{F}$"))
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(latex2exp)
+plot(electro$ti, electro$Fi, pch = 16, xlim = c(0,30), ylim = c(0,0.2), 
+     xlab = TeX("$t_i$"), ylab = "empirical CDF")
+points(c(electro$ti), c(0,electro$Fi[-4]))
+segments(0,0,electro$ti[1],0)
+segments(electro$ti[1],electro$Fi[1], electro$ti[2])
+segments(electro$ti[2],electro$Fi[2], electro$ti[3])
+segments(electro$ti[3],electro$Fi[3], electro$ti[4])
+segments(electro$ti[1],0,y1=electro$Fi[1], lty = 2)
+segments(electro$ti[2],electro$Fi[1],y1=electro$Fi[2], lty = 2)
+segments(electro$ti[3],electro$Fi[2],y1=electro$Fi[3], lty = 2)
+```
+
+
+\newpage
+## Problem 4  
+### (a)  
+$$
+\begin{aligned}
+&n_i\ =\ n-\sum\limits_{j=0}^{i-1}d_j\ -\ \sum\limits_{j=0}^{i-1}r_j\ \ ,\ \ i=1,2,...,15\\
+&\hat{p}_i\ =\ \frac{d_i}{n_i}\ \ ,\ \ i=1,2,...,15\\
+&\hat{S}(t_i)\ =\ \prod\limits_{j=1}^i\left(1-\hat{p}_j\right)\ \ ,\ \ i=1,2,...,15\\
+&\hat{F}(t_i)\ =\ 1-\hat{S}(t_i)\ \ ,\ \ i=1,2,...,15
+\end{aligned}
+$$
+
+```{r echo=FALSE}
+library(dplyr)
+elec_system = read.csv("ElectronicSystem.csv")
+elec_system2 = elec_system %>% arrange(Hours) %>% 
+    group_by(Hours) %>% 
+    dplyr::summarise(di = sum(Censoring.Indicator=="Failed"), ri = sum(Censoring.Indicator=="Censored"))
+ni = c(30)
+for (i in 2:15) {
+    ni[i] = ni[i-1]-elec_system2$di[i-1]-elec_system2$ri[i-1]
+}
+
+elec_system2 = elec_system2 %>% 
+    mutate(ni = ni, pi = di/ni)
+Si = c(1)
+for (i in 2:15) {
+    Si[i] = Si[i-1]*(1-elec_system2$pi[i])
+}
+elec_system2 = elec_system2 %>% 
+    mutate(Si = Si, Fi = 1-Si)
+
+kable(elec_system2, col.names = c("Hours","$d_i$","$r_i$","$n_i$","$\\hat{p}_i$","$\\hat{S}(t_i)$","$\\hat{F}(t_i)$"), digits = 4)
+```
+
+
+
+
+### (b)  
+
+
+```{r echo=FALSE}
+plot(elec_system2$Hours, elec_system2$Fi, type = "n", xlab = "Hours", ylab = "empirical CDF", ylim = c(0,0.5))
+for (i in 1:14) {
+    lines(elec_system2$Hours[i:(i+1)], elec_system2$Fi[c(i,i)], lwd = 2)
+}
+```
+
+
+### (c)  
+Use Greenwood's formula to compute the standard error of $\hat{F}(t_i)$
+$$
+s.e.(\hat{F}(t_i))\ =\ \sqrt{\hat{Var}\left(\hat{F}(t_i)\right)}\ =\ \left[\hat{S}(t_i)\right]^2\sum\limits_{j=1}^i\frac{\hat{p}_j}{n_j(1-\hat{p}_j)}
+$$
+by Delta method and logit transformation, the $95\%$ confidence interval limits are
+$$
+\begin{aligned}
+&\hat{F}_L(t_i)\ =\ \frac{\hat{F}(t_i)}{\hat{F}(t_i)+\left(1-\hat{F}(t_i)\right)w_i}\\
+&\hat{F}_U(t_i)\ =\ \frac{\hat{F}(t_i)}{\hat{F}(t_i)+\left(1-\hat{F}(t_i)\right)/w_i}
+\end{aligned}
+$$
+where
+$$
+w_i\ =\ exp\left[Z_{0.975}\ \frac{s.e.(\hat{F}(t_i))}{\hat{F}(t_i)\left(1-\hat{F}(t_i)\right)}\right]
+$$
+
+```{r echo=FALSE}
+se_F = c()
+for (i in 1:15) {
+    remain = 0
+    for (j in 1:i) {
+        remain = remain+elec_system2$pi[j]/(elec_system2$ni[j]*(1-elec_system2$pi[j]))
+    }
+    se_F[i] = sqrt(elec_system2$Si[i]^2*remain)
+}
+compute_w = function(p,se) {
+    exp(qnorm(0.975)*se/(p*(1-p)))
+}
+elec_system2 = elec_system2 %>% 
+    mutate(se_F = se_F, wi = compute_w(Fi,se_F), F_L = Fi/(Fi+(1-Fi)*wi), F_U = Fi/(Fi+(1-Fi)/wi))
+kable(elec_system2[,c(1,7,10,11)], col.names = c("Hours", "$\\hat{F}(t_i)$", "$\\hat{F}_L(t_i)$", "$\\hat{F}_U(t_i)$"), 
+      digits = 4)
+```
+
+
+```{r echo=FALSE}
+plot(elec_system2$Hours, elec_system2$Fi, type = "n", xlab = "Hours", ylab = "empirical CDF", ylim = c(0,0.7))
+for (i in 1:14) {
+    lines(elec_system2$Hours[i:(i+1)], elec_system2$Fi[c(i,i)], lwd = 2)
+    lines(elec_system2$Hours[i:(i+1)], elec_system2$F_L[c(i,i)], lty = 2, col = 2)
+    lines(elec_system2$Hours[i:(i+1)], elec_system2$F_U[c(i,i)], lty = 2, col = 2)
+}
+```
+
+
+\newpage
+## Problem 5  
+### (b)  
+Denote $d_i$ as the interval censored at $\left(t_i,t_{i+1}\right)$, and compute
+$$
+\hat{F}(t_i)\ =\ \frac{1}{28}\sum\limits_{j=1}^id_j
+$$
+
+
+```{r echo=FALSE}
+photo_detector = read.csv("PhotoDetector.csv")
+photo = photo_detector %>% 
+    mutate(di = c(1,1,2,1,1,1,0), ri = c(0,0,0,0,0,0,21)) %>% 
+    select(Thousands.of.Hours.Lower, Thousands.of.Hours.Upper, di, ri) %>% 
+    mutate(Fi = c(0,1/28,2/28,4/28,5/28,6/28,7/28))
+kable(photo, col.names = c("$t_i$", "$t_{i+1}$", "$d_i$", "$r_i$", "$\\hat{F}(t_i)$"), digits = 4)
+```
+
+```{r echo=FALSE}
+plot(photo$Thousands.of.Hours.Lower, photo$Fi, pch = 16, cex = 1, xlim = c(0,4), ylim = c(0,0.5), 
+     xlab = TeX("$t_i$ (thousands of hours)"), ylab = "empirical CDF")
+segments(0,0,2)
+```
+
+### (c)  
+$$
+s.e.\left(\hat{F}(t_i)\right)\ =\ \sqrt{\frac{\hat{F}(t_i)\left(1-\hat{F}(t_i)\right)}{28}}
+$$
+
+```{r echo=FALSE}
+photo = photo %>% 
+    mutate(se_F = sqrt(Fi*(1-Fi)/28))
+kable(photo[,c(1,2,5,6)], col.names = c("$t_i$", "$t_{i+1}$", "$\\hat{F}(t_i)$", "$s.e.(\\hat{F}(t_i))$"), digits = 4)
+```
+
+
+### (d)  
+By Delta method and logit transformation, the $95\%$ confidence interval limits are
+$$
+\begin{aligned}
+&\hat{F}_L(t_i)\ =\ \frac{\hat{F}(t_i)}{\hat{F}(t_i)+\left(1-\hat{F}(t_i)\right)w_i}\\
+&\hat{F}_U(t_i)\ =\ \frac{\hat{F}(t_i)}{\hat{F}(t_i)+\left(1-\hat{F}(t_i)\right)/w_i}
+\end{aligned}
+$$
+where
+$$
+w_i\ =\ exp\left[Z_{0.975}\ \frac{s.e.(\hat{F}(t_i))}{\hat{F}(t_i)\left(1-\hat{F}(t_i)\right)}\right]
+$$
+
+```{r echo=FALSE}
+photo = photo %>% 
+    mutate(wi = compute_w(Fi,se_F), F_L = Fi/(Fi+(1-Fi)*wi), F_U = Fi/(Fi+(1-Fi)/wi))
+kable(photo[,c(1,2,5,8,9)], col.names = c("$t_i$", "$t_{i+1}$", "$\\hat{F}(t_i)$", "$\\hat{F}_L(t_i)$", "$\\hat{F}_U(t_i)$"), digits = 4)
+```
+
+
+```{r echo=FALSE}
+plot(photo$Thousands.of.Hours.Lower, photo$Fi, pch = 16, cex = 1, xlim = c(0,4), ylim = c(0,0.5), 
+     xlab = TeX("$t_i$ (thousands of hours)"), ylab = "empirical CDF")
+segments(0,0,2)
+points(photo$Thousands.of.Hours.Lower, photo$F_L, pch = 2, col = 2)
+points(photo$Thousands.of.Hours.Lower, photo$F_U, pch = 6, col = 2)
+```
+
+### (e)  
+Let $a = 0.01\ ,\ b=0.9\ \Rightarrow\ e_{(a,b,1-\alpha/2)}\ =\ 3.21$. With no censoring the range of $t\ \in\ \left[t_L(a),t_U(b)\right]$ is given by the values of *t* for which $a\leq\hat{F}(t)\leq b$.  
+And by Delta method and logit transformation, the simultaneous approximate $95\%$ confidence interval limits are
+$$
+\begin{aligned}
+&\hat{F}_L(t_i)\ =\ \frac{\hat{F}(t_i)}{\hat{F}(t_i)+\left(1-\hat{F}(t_i)\right)w_i}\\
+&\hat{F}_U(t_i)\ =\ \frac{\hat{F}(t_i)}{\hat{F}(t_i)+\left(1-\hat{F}(t_i)\right)/w_i}
+\end{aligned}
+$$
+where
+$$
+w_i\ =\ exp\left[e_{(a,b,1-\alpha/2)}\ \frac{s.e.(\hat{F}(t_i))}{\hat{F}(t_i)\left(1-\hat{F}(t_i)\right)}\right]
+$$
+
+```{r echo=FALSE}
+compute_w2 = function(p,se) {
+  exp(3.21*se/(p*(1-p)))
+}
+photo = photo %>% 
+  mutate(wi.2 = compute_w2(Fi,se_F), F_L.2 = Fi/(Fi+(1-Fi)*wi.2), F_U.2 = Fi/(Fi+(1-Fi)/wi.2))
+kable(photo[,c(1,2,5,11,12)], col.names = c("$t_i$", "$t_{i+1}$", "$\\hat{F}(t_i)$", "$\\hat{F}_L(t_i)$", "$\\hat{F}_U(t_i)$"), 
+      digits = 4)
+```
+
+
+
+### (f)  
+(1) The pointwise confidence intervals are useful for making a statement about $F(t_i)$ at one particular specified value of $t_i$ (even thought it is common practice to plot a set of such intervals). However, simultaneous confidence band is useful over a range of value $t$.  
+(2) The overall coverage probability for the collection of pointwise intervals ($1-\alpha^*$) is generally less than that for any individual interval ($1-\alpha$) or the same level simultaneous confidence band ($1-\alpha$).  
+(3) For any $t_i$, simultaneous confidence band is wider than the same level pointwise confidence interval.  
+
+
+
+\newpage
+## Problem 7  
+### (a)  
+
+```{r echo=FALSE}
+hf_weibull = function(t,eta,beta) {
+  beta/eta*(t/eta)^(beta-1)
+}
+curve(hf_weibull(x,10,0.5), 0,10, lwd = 2, xlab = "t", ylab = "hazard function", ylim = c(0,0.5))
+curve(hf_weibull(x,10,1),0,10,lwd = 2, col = 2, add = T)
+curve(hf_weibull(x,10,2),0,10,lwd = 2, col = 3, add = T)
+curve(hf_weibull(x,10,4),0,10,lwd = 2, col = 4, add = T)
+legend("top", legend = c(TeX("$\\beta$=0.5"), TeX("$\\beta$=1"), TeX("$\\beta$=2"), TeX("$\\beta$=4")), col = 1:4, lwd = 2)
+```
+
+### (b)  
+計算在不同的 shape parameter $\beta$ 和不同的時間 $t$ 之下，hazard function 的數值變化
+
+```{r echo=FALSE}
+weibull_table = data.frame(beta = c(0.5,1,2,4), 
+                           t1 = c(hf_weibull(1,10,0.5), hf_weibull(1,10,1), hf_weibull(1,10,2), hf_weibull(1,10,4)), 
+                           t10 = c(hf_weibull(10,10,0.5), hf_weibull(10,10,1), hf_weibull(10,10,2), hf_weibull(10,10,4)) 
+                           )
+kable(weibull_table, col.names = c("$\\beta$", "t=1", "t=10"), digits = 2)
+```
+
++ 在 $t=1$ 的情況下，hazard function 由大到小依次為：$\beta=0.5\ ,\ \beta=1\ ,\ \beta=2\ ,\ \beta=4$  
++ 在 $t=10$ 的情況下，hazard function 由大到小依次為：$\beta=4\ ,\ \beta=2\ ,\ \beta=1\ ,\ \beta=0.5$，和上面的順序完全顛倒  
+
+hazard function 所計算出的數值代表，在時刻 $t$ 產品瞬間的死亡傾向，由**(a)**中的圖可知，Weibull distribution 的 hazard function 會隨著 $\beta$ 的不同而呈現不一樣的趨勢變化：  
+(1) 若 $0\ <\ \beta\ <\ 1$，hazard function 隨著時間遞減  
+(2) 若 $\beta\ =\ 1$，hazard function 不會隨著時間改變  
+(3) 若 $\beta\ >\ 1$，hazard function 隨著時間遞增  
+
+
+### (c)  
+
+```{r echo=FALSE}
+cdf_weibull = function(t,eta,beta) {
+  1-exp(-(t/eta)^beta)
+}
+curve(cdf_weibull(x,10,0.5), 0,10, lwd = 2, xlab = "t", ylab = "cdf")
+curve(cdf_weibull(x,10,1),0,10,lwd = 2, col = 2, add = T)
+curve(cdf_weibull(x,10,2),0,10,lwd = 2, col = 3, add = T)
+curve(cdf_weibull(x,10,4),0,10,lwd = 2, col = 4, add = T)
+legend("topleft", legend = c(TeX("$\\beta$=0.5"), TeX("$\\beta$=1"), TeX("$\\beta$=2"), TeX("$\\beta$=4")), col = 1:4, lwd = 2)
+```
+
+計算在不同的 shape parameter $\beta$ 和不同的時間 $t$ 之下，cdf 的數值變化  
+
+```{r echo=FALSE}
+cdf_table = data.frame(beta = c(0.5,1,2,4), 
+                       t1 = c(cdf_weibull(1,10,0.5), cdf_weibull(1,10,1), cdf_weibull(1,10,2), cdf_weibull(1,10,4)), 
+                       t10 = c(cdf_weibull(10,10,0.5), cdf_weibull(10,10,1), cdf_weibull(10,10,2), cdf_weibull(10,10,4)))
+kable(cdf_table, col.names = c("$\\beta$", "t=1", "t=10"), digits = 3)
+```
+
++ $t=1$ 時，$\beta=0.5$ 所對應的 cdf 數值最大  
++ $t=10$ 時，四種 $\beta$ 所對應的 cdf 數值皆相同  
+
+因為在 $0\ <\ t\ \leq\ 1$ 時，$\beta=0.5$ 此種產品的 hazard function 也即死亡傾向大於其他三種 $\beta$ 值的情況，所以很自然該種產品的 $F(1)\ =\ P(T\ \leq\ 1)$ 也會是最大的  
+然而藉由 Weibull distribution 的 cdf $F(t\ ;\ \eta\ ,\ \beta)\ =\ 1-exp\left[-\left(\frac{t}{\eta}\right)^\beta\right]$ 可知當 $t\ =\ \eta\ =\ 10$ 時，不論 $\beta$ 數值為何，計算出的 cdf 數值皆相同  
+
+
+
+\newpage
+### (d)  
+
+```{r echo=FALSE}
+hf_mixture = function(t) {
+  (5*exp(-t)+exp(-t/5))/(5*exp(-t)+5*exp(-t/5))
+}
+curve(hf_mixture(x), 0,10,lwd = 2, xlab = "t", ylab = "hazard function")
+abline(h = 0.2, col = 2, lty = 2)
+```
+
+
+### (e)  
+圖形呈現遞減，最後會趨近 0.2  
+此群產品可視為是一組 life time$\ \sim\ Exp(\theta=1)$ 和一組 life time$\ \sim\ Exp(\theta=5)$，這兩組產品的混合，而 $\theta=1$ 的產品有較高的死亡傾向 ($h(t)\ =\ \frac{1}{\theta}\ =\ 1$)，會在實驗的初期拉高整體的死亡傾向平均，但隨著實驗進行，這種類型的產品會逐漸減少，最後 $\theta=5$ 這類死亡傾向較低 ($h(t)\ =\ \frac{1}{5}\ =\ 0.2$) 的產品會佔全部產品中較高的比例，造成整體的 hazard function 的數值逐漸趨近 0.2  
+
+
+
+### (f)  
+exponential-mixture 的 hazard function 隨著時間遞減，最後趨近一個穩定數值 0.2，從**(e)**可知此產品會在實驗初期大量淘汰那些死亡傾向較高也即品質較差的產品，最後留下的大部分都是死亡傾向較低也即品質較高的產品，因此我們可以說此母體會隨著時間逐漸「改善」  
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
