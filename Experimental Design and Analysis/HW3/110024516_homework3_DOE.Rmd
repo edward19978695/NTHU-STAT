@@ -1,0 +1,358 @@
+---
+title: "Experimental Design and Analysis Homework 3"
+author: "110024516 邱繼賢"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1.5}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+## Problem 1. (2.1)  
+建構模型
+$$
+y_{ij}\ =\ \eta\ +\ \tau_i\ +\ \epsilon_{ij}\ \ ,\ \ \epsilon_{ij}\ \sim\ N\left(0,\sigma^2\right)
+$$
+$\tau_{i}$ 為 treatment (operator) effect, $i\ =\ 1,2,3,4\ \ ,\ \ j\ =\ 1,2,3,4,5$
+
+```{r}
+pulp_data = c(59.8,60,60.8,60.8,59.8,
+              59.8,60.2,60.4,59.9,60,
+              60.7,60.7,60.5,60.9,60.3,
+              61,60.8,60.6,60.5,60.5)
+operator = gl(4,5,labels = c("A","B","C","D"))
+pulp_table = aov(pulp_data ~ operator)
+summary(pulp_table)
+```
+
+$\Rightarrow\ N=20\ \ ,\ \ k=4\ \ ,\ \ n_1=n_2=n_3=n_4=5\ \ ,\ \ \hat{\sigma}^2=0.1062$  
+
+(1) Bonferroni Method :  
+the lower and upper bounds are
+$$
+\bar{y}_{i\cdot}-\bar{y}_{j\cdot}\ \pm\ t_{N-k,\frac{\alpha}{2k'}}\ \hat{\sigma}\sqrt{\frac{1}{n_i}+\frac{1}{n_j}}\ \ ,\ \ k'\ =\ C_2^4\ =\ 6
+$$
+
+```{r message=FALSE, warning=FALSE}
+library(asbio)
+bonfCI(pulp_data, operator)
+```
+
+the interval length is
+$$
+2\times t_{N-k,\frac{\alpha}{2k'}}\ \hat{\sigma}\sqrt{\frac{1}{n_i}+\frac{1}{n_j}}
+$$
+
+
+```{r}
+2*qt(1-0.05/(2*6), 20-4)*sqrt(0.1062*(1/5+1/5))
+```
+
+(2) Tukey Method :  
+the lower and upper bounds
+$$
+\bar{y}_{i\cdot}-\bar{y}_{j\cdot}\ \pm\ \frac{1}{\sqrt{2}}\ q_{k,N-k,\alpha}\ \hat{\sigma}\sqrt{\frac{1}{n_i}+\frac{1}{n_j}}
+$$
+
+```{r}
+tukeyCI(pulp_data, operator)
+```
+
+the interval length is
+$$
+\sqrt{2}\times q_{k,N-k,\alpha}\ \hat{\sigma}\sqrt{\frac{1}{n_i}+\frac{1}{n_j}}
+$$
+
+```{r}
+sqrt(2)*qtukey(0.95,4,20-4)*sqrt(0.1062*(1/5+1/5))
+```
+
+可以發現 Tukey Method 的信賴區間長度較短，代表此種方式更為 powerful  
+
+
+
+## Problem 2. (2.2)  
+### (a)  
+
+給定顯著水準 $\alpha\ =\ 0.01$，建構每一對 treatments 的 $99\%$ confidence interval  
+
+```{r}
+bonfCI(pulp_data, operator, conf.level = 0.99)
+```
+
+
+```{r}
+tukeyCI(pulp_data, operator, conf.level = 0.99)
+```
+
+可以發現每一組 multiple comparison 在兩種方法下的 $99\%$ confidence interval 都包含 0，代表我們無法宣稱有任何一對 treatments (operators) 之間有顯著差距。  
+
+
+### (b)  
+在進行 one-way ANOVA 和 multiple comparison test 的時候選擇的顯著水準應該要一致，才不會出現結果矛盾的情況，以下對兩種不同的 $\alpha$ 值所做出的結果進行比較  
+
+(1) $\alpha\ =\ 0.01$ :  
+**2.1** 題中的 ANOVA 表格所顯示的 p-value$\ =\ 0.0226\ >\ \alpha$，結果為不拒絕 $H_0$，代表四位 operators 之間並沒有顯著差異，與 **2.2 (a)** 做 multiple comparison test 的結果一致。  
+
+(2) $\alpha\ =\ 0.05$ :  
+ANOVA 表格中的 p-value$\ =\ 0.0226\ <\ \alpha$，結果為拒絕 $H_0$，代表四位 operators 中至少有一對之間有顯著差異，再觀察 **2.1** 題的 $95\%$ Tukey Method confidence interval 中的 operator B 和 D，可以發現其對應的 CI 並沒有包含 0，故兩者之間存在顯著差異，與 one-way ANOVA 所做出的結果一致。  
+
+
+### (c)  
+p-value$\ =\ 0.0226\ >\ \alpha\ =\ 0.01\ \Rightarrow$ 我們並沒有足夠的證據來拒絕 $H_0$，已經可以判定四位 operators 之間並沒有顯著差異了，所以不需要再進行 multiple comparison test 即可得到與**(a)**相同的結論。  
+
+
+
+## Problem 3. (2.14)  
+### (a)  
+建構模型
+$$
+y_{ij}\ =\ \eta\ +\ \tau_{i}\ +\ \epsilon_{ij}\ \ ,\ \ \epsilon_{ij}\ \sim\ N\left(0,\sigma^2\right)
+$$
+where $\tau_{i}$ is the treatment (area) effect, $i=A,B,C,D\ \ ,\ \ j=1,2,...,16$  
+
+(1) Over all F test
+$$
+\begin{aligned}
+&H_0\ :\ \tau_A=\tau_B=\tau_C=\tau_D\\
+&H_1\ :\ \text{at least one pair of }\tau_i's\text{ are not the same}
+\end{aligned}
+$$
+
+```{r}
+mv_data = read.table("mv.txt", header = T)
+colnames(mv_data) = c("A","B","C","D")
+mv_data2 = stack(mv_data)
+mv_data2 = cbind(mv_data2, rep(c(0.016,0.030,0.044,0.058), each = 16))
+colnames(mv_data2) = c("value", "treatment", "area")
+mv_table = aov(value ~ treatment, data = mv_data2)
+summary(mv_table)
+```
+
+$\Rightarrow\ $p-value$\ =\ 0.000381\ <\ \alpha\ =\ 0.05$，故拒絕 $H_0$，所以至少有一組 treatmeants 的效應之間具有顯著差異。  
+
+(2) Multiple comparison : Tukey method  
+建構 $95\%$ 的 confidence interval (方法同**2.1**)
+
+```{r}
+tukeyCI(mv_data2$value, mv_data2$treatment)
+```
+
+由上表可知，AC、AD、BD 三組的 confidence intervals 皆不包含 0，拒絕 $H_0$，故此三組中兩兩之間的效應具有顯著差異。  
+
+
+### (b)  
+Define the first and second degree polynomials
+$$
+\begin{aligned}
+&P_1(x)\ =\ 2\left(\frac{x-m}{\Delta}\right)\\
+&P_2(x)\ =\ \left(\frac{x-m}{\Delta}\right)^2\ -\ \left(\frac{k^2-1}{12}\right)
+\end{aligned}
+$$
+where $m=0.037\ ,\ \Delta=0.014\ ,\ k=4$, then
+$$
+\begin{aligned}
+&\left(P_1(0.016)\ ,\ P_1(0.030)\ ,\ P_1(0.044)\ ,\ P_1(0.058)\right)\ =\ (-3,-1,1,3)\\
+&\left(P_2(0.016)\ ,\ P_2(0.030)\ ,\ P_2(0.044)\ ,\ P_2(0.058)\right)\ =\ (1,-1,-1,1)
+\end{aligned}
+$$
+建構模型
+$$
+y\ =\ \beta_0\ +\ \beta_1\ \frac{P_1(x)}{\sqrt{20}}\ +\ \beta_2\ \frac{P_2(x)}{2}\ +\ \epsilon
+$$
+
+
+```{r}
+P1 = function(x) {
+    2*(x-0.037)/0.014
+}
+P2 = function(x) {
+    ((x-0.037)/0.014)^2-5/4
+}
+fit = lm(value ~ I(P1(area)/sqrt(20)) + I(P2(area)/2), data = mv_data2)
+summary(fit)
+```
+
+線性效應的 p-value 結果顯著對模型有貢獻，而且其係數為負數，代表隨著排氣孔的面積增大，炮擊的速度隨之下降，與題目一開始的假設相符合；而二次效應的 p-value 結果呈現不顯著。  
+
+對模型檢查 diagnostic
+
+```{r}
+par(mfrow = c(2,2))
+plot(fit)
+```
+
+可以看出 residual 基本上沒有出現 non-constant variance 和 mean curvature，但是從 QQ plot 可以看出，residual 明顯不服從常態分配。  
+
+
+
+## Problem 4. (2.17)  
+### (a)  
+
+(1) F test for devices  
+建構模型 (random effect model)
+$$
+y_{ij}\ =\ \eta\ +\ \tau_{i}\ +\ \epsilon_{ij}\ \ ,\ \ \tau_i\ \sim\ N\left(0,\sigma^2_\tau\right)\ \ ,\ \ \epsilon_{ij}\ \sim\ N\left(0,\sigma^2\right)
+$$
+where $\tau_i$ is the random effect of devices, $i=1,2,3\ \ ,\ \ j=1,2,...,15$, and $\sigma^2$ and $\sigma^2_\tau$ are two variance components of the model.  
+Test
+$$
+\begin{aligned}
+&H_0\ :\ \sigma^2_\tau\ =\ 0\\
+&H_1\ :\ \sigma^2_\tau\ >\ 0
+\end{aligned}
+$$
+ANOVA table : 
+
+```{r}
+data = read.table("BloodPressure.txt", skip = 1, header = T)
+dev_data = data[,2:4]
+dev_data2 = stack(dev_data)
+colnames(dev_data2) = c("value", "device")
+dev_table = aov(value ~ device, data = dev_data2)
+summary(dev_table)
+```
+estimates of variance components : 
+$$
+\begin{aligned}
+&\hat{\sigma}^2\ =\ MSE\ =\ 88.08\\
+&\hat{\sigma}^2_\tau\ =\ \frac{MSTr-MSE}{n}\ =\ \frac{0.01-88.08}{15}\ <\ 0\ \Rightarrow\ \hat{\sigma}^2_\tau\ =\ 0
+\end{aligned}
+$$  
+
+(2) F test for doctors  
+建構模型 (random effect model)
+$$
+y_{ij}\ =\ \eta\ +\ \tau_{i}\ +\ \epsilon_{ij}\ \ ,\ \ \tau_i\ \sim\ N\left(0,\sigma^2_\tau\right)\ \ ,\ \ \epsilon_{ij}\ \sim\ N\left(0,\sigma^2\right)
+$$
+where $\tau_i$ is the random effect of doctors, $i=1,2,3\ \ ,\ \ j=1,2,...,15$, and $\sigma^2$ and $\sigma^2_\tau$ are two variance components of the model.  
+Test
+$$
+\begin{aligned}
+&H_0\ :\ \sigma^2_\tau\ =\ 0\\
+&H_1\ :\ \sigma^2_\tau\ >\ 0
+\end{aligned}
+$$
+ANOVA table : 
+
+```{r}
+doc_data = data[,6:8]
+doc_data2 = stack(doc_data)
+colnames(doc_data2) = c("value", "doctor")
+doc_table = aov(value ~ doctor, data = doc_data2)
+summary(doc_table)
+```
+estimates of variance components : 
+$$
+\begin{aligned}
+&\hat{\sigma}^2\ =\ MSE\ =\ 1.78\\
+&\hat{\sigma}^2_\tau\ =\ \frac{MSTr-MSE}{n}\ =\ \frac{248.16-1.78}{15}\ =\ 16.42533
+\end{aligned}
+$$
+
+
+
+### (b)  
+
+(1) p-value$\ =\ 1\ >\ 0.05\ =\ \alpha$，不拒絕 $H_0$，故我們沒有充分的證據顯示所有設備之間有著顯著的變異  
+(2) p-value$\ <\ 2e-16\ <\ 0.05\ =\ \alpha$，拒絕 $H_0$，故我們有充分的證據顯示所有醫生之間有著顯著的變異  
+
+
+### (c)  
+The $95\%$ confidence intervals limits
+$$
+\hat{\eta}\ \pm\ t_{k-1,\frac{\alpha}{2}}\sqrt{\frac{MSTr}{nk}}
+$$
+where $\hat{\eta}_1=128.0664\ ,\ \hat{\eta}_2=130.0213\ ,\ MSTr_1=0.01\ ,\ MSTr_2=248.16\ ,\ k=3\ ,\ n=15$
+
+
+```{r message=FALSE, warning=FALSE}
+library(knitr)
+eta_hat1 = mean(dev_data2$value)
+MSTr1 = 0.01
+lower1 = eta_hat1-qt(0.975,3-1)*sqrt(MSTr1/45)
+upper1 = eta_hat1+qt(0.975,3-1)*sqrt(MSTr1/45)
+eta_hat2 = mean(doc_data2$value)
+MSTr2 = 248.16
+lower2 = eta_hat2-qt(0.975,3-1)*sqrt(MSTr2/45)
+upper2 = eta_hat2+qt(0.975,3-1)*sqrt(MSTr2/45)
+kable(data.frame(a = c("devices","doctors"), lower = c(lower1,lower2), upper = c(upper1,upper2)), 
+      col.names = c("","Lower Bound", "Upper Bound"), digits = 4)
+```
+
+
+
+## Problem 5. (2.18)  
+### (a)  
+In randon effect model
+$$
+y_{ij}\ =\ \eta\ +\ \tau_i\ +\ \epsilon_{ij}\ \ ,\ \ \tau_i\ \sim\ N\left(0,\sigma^2_\tau\right)\ \ ,\ \ \epsilon_{ij}\ \sim\ N\left(0,\sigma^2\right)
+$$
+模型描述的是從整體的 treatment population 中隨機抽出 treatment，此時 $\tau_i$ 不再是固定的參數，而是一個稱為 random effect 的隨機變數，所以 $E\left(y_{ij}\right)\ =\ E\left(\eta+\tau_i+\epsilon_{ij}\right)\ =\ E(\eta)\ =\ \eta$，$\eta$ 就是 population mean，同時也代表著整個 treatmeat population 的平均。  
+
+### (b)  
+探討不同業務員，對業績的影響：  
+
+(1) random effect model  
+此情況下主要是探討的是整個業務員母體(公司全體員工)對業績的影響的變異大小是否顯著，不同的數個業務員只是從整個母體中所抽出的代表，特定業務員之間所帶來的差異並不是我們所關心的，這幾個抽出的業務員是否能代表整個母體，為我們帶來關於母體的資訊才是我們關注的重點，而此時的參數 $\eta$ 代表的是業務員母體的平均，自然也會是我們所關心的數值。  
+
+(2) fixed effect model  
+此情況下主要探討的是特定幾個業務員之間對業績影響的是否有顯著差異，所選出特定的幾個業務員對母體有沒有代表性，並不是我們關注的重點，所以我們只需要知道 treatment effect $\tau_i$ 這些參數之間的關係即可，不用在意參數 $\eta$ 的數值，因為該數值的大小並不會影響到不同業務員之間的差距，只是一個讓全體數值一起平移的參數。
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
