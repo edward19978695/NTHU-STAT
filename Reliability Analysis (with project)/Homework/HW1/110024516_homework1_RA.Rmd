@@ -1,0 +1,258 @@
+---
+title: "Reliability Analysis Homework 1"
+author: "110024516 邱繼賢"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1.5}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+## Problem 1  
+
+(a) 參考 *Example 1.2 Integrated Circuit Life Test Data* 的 *Table 1.2* 可以看到只是紀錄前 28 個 failed data ($\frac{28}{4156}\approx 0.67\%$) 就花費了 1370 個小時，若是要觀測到$50\%$的 units 都 fail 掉，那將會花費大量的時間和金錢成本，而且有多數工業製品的 hazard function 都有著 bathtub 的圖形性質，故只要監測時間大於一開始非常不穩定的 Infant mortality 時期，接下來的失效風險就會進入相對穩定的時期。所以我們會更在乎$1\%$產品失效的時間，而不是$50\%$產品失效的時間。  
+
+(b) 在進行可靠度分析時對於 mean/standard deviation 比較不感興趣，是因為在收集 failure time data 常常會有大量的 right censored 的資料點，這些數據的實際 failure time 數值相對大，在計算 mean/standard deviation 時會嚴重影響其數值，而且我們真正關心的是那些在早期就已經失效的產品(見上一小題)，所以在進行可靠度分析時往往會選擇更加 robust 的統計量 quantiles，再加上 quantiles 可以很直接的反應出 failure probabilities/rates，對於我們推估出 failure time empirical cdf/pdf 很有幫助。  
+
+(c) 對於 non-repairable 的物品，失效的 mean time 就是一個很重要的指標，因為這種產品常常用於 mission-critical system，這對於操作的成功非常重要，使得我們去探討他的平均失效時間就變得有意義。
+
+
+## Problem 2  
+
+(a) 汽車表面烤漆的 life time 是用 calender age 來衡量，因為汽車烤漆的 failure 是藉由時間而不是距離所影響，而我們定義烤漆的 failure 是由表面是否有出現氣泡、裂痕、剝落來判斷，外在因素如溫度、紫外線日照等也會加速表面烤漆的失效。  
+
+(b) 汽車 lead-acid battery 的 life time 是用電池使用的年限，或是電池充電/放電的循環次數來衡量，這兩者都會影響著電池的供電能力，當電池所需充電頻率提高到一定程度，即電池蓄電量有顯著下降，則定義為電池的 failure，在外界環境較為溫暖時，電池的壽命會較長。  
+
+(c) 汽車的雨刷的 life time 是用雨刷使用次數來衡量，當雨刷上的橡膠磨損到一定程度，即定義為 failure，外界的溫度較高或是日照皆會加速橡膠的損壞。  
+
+(d) 汽車輪胎的 life time 是用行駛的距離來衡量，可以藉由觀察胎痕的深度，若是深度小於一定的數值，即定義為 failure，外界的溫度較高、胎壓較高、負重較重等因素皆會加速輪胎的損壞。  
+
+(e) LED 燈泡的 life time 是用使用的小時數或者開/關的次數來衡量，通常 LED 燈泡變色、光衰(亮度減弱)或是不亮就被定義為 failure，外界的環境溫度越高會加速燈泡的損壞。  
+
+
+## Problem 3  
+**(a)**
+$$
+P(T<150\ |\ T>120)\ =\ \frac{P(120<T<150)}{P(T>120)}\ =\ \frac{F(150)-F(120)}{1-F(120)}\ =\ \frac{exp\left[-\left(\frac{120}{130}\right)^{2.5}\right]-exp\left[-\left(\frac{150}{130}\right)^{2.5}\right]}{exp\left[-\left(\frac{120}{130}\right)^{2.5}\right]}\ \approx\ 0.4574
+$$
+
+
+**(b)** The remaining-life cdf
+$$
+\begin{aligned}
+&G\left(u;120\right)\ =\ P\left(U\leq u\ |\ T>120\right)\ =\ P\left(T\leq u+120\ |\ T>120\right)\ =\ \frac{F(u+120)-F(120)}{1-F(120)}\\
+&=\frac{exp\left[-\left(\frac{120}{130}\right)^{2.5}\right]-exp\left[-\left(\frac{120+u}{130}\right)^{2.5}\right]}{exp\left[-\left(\frac{120}{130}\right)^{2.5}\right]}\ =\ 1-exp\left[\left(\frac{120}{130}\right)^{2.5}-\left(\frac{120+u}{130}\right)^{2.5}\right]\\
+&\Rightarrow\ G^{-1}\left(p;120\right)\ =\ 130\left[\left(\frac{120}{130}\right)^{2.5}\ -\ log(1-p)\right]^{\frac{1}{2.5}}\ -\ 120\\
+&median\ =\ u_{0.5}\ =\ G^{-1}\left(0.5;120\right)\ =\ 130\left[\left(\frac{120}{130}\right)^{2.5}\ -\ log(1-0.5)\right]^{\frac{1}{2.5}}\ -\ 120\ \approx\ 33.3699\ (\text{thousand miles})
+\end{aligned}
+$$
+
+
+\newpage
+## Problem 4  
+**(a)**
+$$
+\begin{aligned}
+&f(t)\ =\ \frac{dF(t)}{dt}\ =\ \frac{1}{2}\ \ ,\ \ 0<t\leq\ 2\\
+&h(t)\ =\ \frac{f(t)}{1-F(t)}\ =\ \frac{\frac{1}{2}}{1-\frac{t}{2}}\ =\ \frac{1}{2-t}\ \ ,\ \ 0<t<2
+\end{aligned}
+$$
+
+**(b)**  
+$$
+\begin{aligned}
+&H(t)\ =\ \int_0^t\ h(x)\ dx\ =\ \int_0^t\ \frac{1}{2-x}\ dx\ =\ \left[-log(2-x)\right]_{x=0}^t\ =\ log\left(\frac{2}{2-t}\right)\ \ ,\ \ 0<t<2\\
+&1-exp[-H(t)]\ =\ 1-\frac{2-t}{2}\ =\ \frac{t}{2}\ =\ F(t)\ \ ,\ \ 0<t\leq 2
+\end{aligned}
+$$
+
+
+**(c)**
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+par(mfrow = c(1,2))
+curve(1/2+0*x, 0,2, lwd = 2, col = 2, xlab = "t", ylab = "f(t)", main = "pdf", ylim = c(0,1))
+curve(x/2,0,2, lwd = 2, col = 4, xlab = "t", ylab = "F(t)", main = "cdf")
+```
+
+\newpage
+**(d)**
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+curve(1/(2-x),0,2, lwd = 2, xlab = "t", ylab = "h(t)", main = "hazard function")
+```
+直觀解釋：  
+因為所有產品的壽命就只到 $t=2$ ，所以當 $t\rightarrow2$ 時，所有的產品必須都失效，因此失效傾向 (propensity to fial) h(t) 的數值就會急速上升，趨近無限。  
+
+數學解釋：  
+$1-F(t)\ \rightarrow\ 0$ as $t\rightarrow 2$, $\therefore\ h(t)\ =\ \frac{f(t)}{1-F(t)}\ \rightarrow\ \infty$ as $t\rightarrow 2$
+
+
+\newpage
+**(e)**
+$$
+\begin{aligned}
+&p\ =\ P(T\ \leq\ t_p)\ =\ F(t_p)\ =\ \frac{t_p}{2}\ \Rightarrow\ t_p\ =\ F^{-1}(p)\ =\ 2p\\
+&t_{0.4}\ =\ F^{-1}(0.4)\ =\ 2\times0.4\ =\ 0.8
+\end{aligned}
+$$
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(latex2exp)
+par(mfrow = c(1,2))
+curve(1/2+0*x, 0,2, lwd = 2, xlab = "t", ylab = "f(t)", main = "pdf", ylim = c(0,1))
+segments(0.8,0,0.8,0.5, lty = 2, col = 2)
+axis(1,0.8, labels = TeX("$t_{0.4}$"), col = 2, 
+     col.axis = 2, mgp =c(3,0.2,0), cex.axis = 0.7)
+
+cord.x <- c(0,0.8,0.8,0)
+cord.y <- c(0,0,0.5,0.5)
+polygon(cord.x,cord.y,density=7,angle=135,border=NA,lty=1,cex=0.6, col = 2)
+text(0.4,0.25,labels = "0.4", cex = 2.5, col = 2)
+
+curve(x/2,0,2, lwd = 2, xlab = "t", ylab = "F(t)", main = "cdf")
+segments(0.8,-0.1,0.8,0.4,lty = 2, col = 4)
+segments(0.8,0.4,-0.1,0.4,lty = 2, col = 4)
+axis(1,0.8, labels = TeX("$t_{0.4}$"), col = 4, 
+     col.axis = 4, mgp =c(3,0.2,0), cex.axis = 0.7)
+```
+
+
+**(f)**
+
+$$
+\begin{aligned}
+P(0.1<T\leq 0.2)\ =\ \int_{0.1}^{0.2}\ f(t)\ dt\ =\ (0.2-0.1)\times0.5\ =\ 0.05\\
+P(0.8<T\leq 0.9)\ =\ \int_{0.8}^{0.9}\ f(t)\ dt\ =\ (0.9-0.8)\times0.5\ =\ 0.05
+\end{aligned}
+$$
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+curve(1/2+0*x, 0,2, lwd = 2, xlab = "t", ylab = "f(t)", main = "pdf", ylim = c(0,1), xlim = c(0,2))
+segments(0.1,-0.1,0.1,0.5,col = 2, lty = 2)
+segments(0.2,-0.1,0.2,0.5,col = 2, lty = 2)
+axis(1,c(0.1,0.2), labels = c("0.1","0.2"), col = 2, 
+     col.axis = 2, mgp =c(3,0.2,0), cex.axis = 0.6)
+cord.x <- c(0.1,0.2,0.2,0.1)
+cord.y <- c(0,0,0.5,0.5)
+polygon(cord.x,cord.y,density=7,angle=135,border=NA,lty=1,cex=0.6, col = 2)
+text(0.16,0.55, labels = "0.05", col = 2, cex=1)
+
+segments(0.8,-0.1,0.8,0.5,col = 4, lty = 2)
+segments(0.9,-0.1,0.9,0.5,col = 4, lty = 2)
+axis(1,c(0.8,0.9), labels = c("0.8","0.9"), col = 4, 
+     col.axis = 4, mgp =c(3,0.2,0), cex.axis = 0.6)
+cord.x <- c(0.8,0.9,0.9,0.8)
+cord.y <- c(0,0,0.5,0.5)
+polygon(cord.x,cord.y,density=7,angle=135,border=NA,lty=1,cex=0.6, col = 4)
+text(0.86,0.55, labels = "0.05", col = 4, cex=1)
+
+
+```
+
+**(g)**
+
+$$
+\begin{aligned}
+&P(0.1<T\leq 0.2\ |\ T>0.1)\ =\ \frac{P(0.1<T\leq 0.2)}{P(T>0.1)}\ =\ \frac{F(0.2)-F(0.1)}{1-F(0.1)}\ =\ 0.0526\\
+&h(0.1)\ \times\ (0.2-0.1)\ =\ 0.0526\ =\ P(0.1<T\leq 0.2\ |\ T>0.1)\\
+\\
+&P(0.8<T\leq 0.9\ |\ T>0.8)\ =\ \frac{P(0.8<T\leq 0.9)}{P(T>0.8)}\ =\ \frac{F(0.9)-F(0.8)}{1-F(0.8)}\ =\ 0.0833\\
+&h(0.8)\ \times\ (0.9-0.8)\ =\ 0.0833\ =\ P(0.8<T\leq 0.9\ |\ T>0.8)
+\end{aligned}
+$$
+
+
+**(h)**  
+因為*f(x)*在此題為一個常數函數，所以
+$$
+\begin{aligned}
+h(t)\times\Delta t\ =\ \frac{f(t)\times\Delta t}{1-F(t)}\ =\ \frac{\int_t^{t+\Delta t}\ f(t)\ dt}{1-F(t)}\ =\ \frac{F(t+\Delta t)-F(t)}{1-F(t)}\ =\ P(t<T\leq t+\Delta t\ |\ T>t)
+\end{aligned}
+$$
+此近似值會正好跟實際值一樣(不論$\Delta t$大小為何)，但是在一般的情況下，此近似式只會在$\Delta t$足夠小的時候才會成立。
+
+## Problem 5  
+75 FITs : 每小時每$10^9$個單位中有75個單位壞掉
+$$
+\Rightarrow\ \frac{75}{10^9}\times(1500\times20)\times(2\times8760)\ =\ 39.42
+$$
+
+
+
+
+## Problem 6  
+
+**(a)**  
+$$
+\begin{aligned}
+p_i\ =\ P(t_{i-1}<T\leq t_i\ |\ T>t_{i-1})\ =\ \frac{P(t_{i-1}<T\leq t_i)}{P(T>t_{i-1})}\ =\ \frac{F(t_i)-F(t_{i-1})}{1-F(t_{i-1})}\ =\ \frac{\pi_i}{S(t_{i-1})}
+\end{aligned}
+$$
+where
+$$
+\pi_i\ =\ P(t_{i-1}<T\leq t_i)\ =\ F(t_{i})\ -\ F(t_{i-1})
+$$
+
+**(b)**  
+Let's prove **(d)** first
+$$
+\begin{aligned}
+&p_i\ =\ \frac{F(t_i)-F(t_{i-1})}{1-F(t_{i-1})}\ \Rightarrow\ 1-p_i\ =\ \frac{1-F(t_i)}{1-F(t_{i-1})}\\
+&\prod \limits_{j=1}^i\ (1-p_j)\ =\ [1-F(t_1)]\times\frac{1-F(t_2)}{1-F(t_{1})}\times\frac{1-F(t_3)}{1-F(t_{2})}\times...\times\frac{1-F(t_{i-1})}{1-F(t_{i-2})}\times\frac{1-F(t_i)}{1-F(t_{i-1})}\ =\ 1-F(t_i)\ =\ S(t_i)
+\end{aligned}
+$$
+And by the result in **(a)**
+$$
+\begin{aligned}
+&\pi_1\ =\ p_1\times S(t_0)\ =\ p_1\times S(0)\ =\ p_1\times 1\ =\ p_1\\
+&\pi_i\ =\ p_i\times S(t_{i-1})\ =\ p_i\ \prod \limits_{j=1}^{i-1}\ (1-p_j)\ \ ,\ \ i=2,...,m\\
+&\pi_{m+1}\ =\ p_{m+1}\times S(t_m)\ =\ P(t_m<T < \infty\ |\ T > t_m)\ \times\ S(t_m)\ =\ 1\times\prod\limits_{j=1}^m\ (1-p_j)\ =\ \prod\limits_{j=1}^m\ (1-p_j)
+\end{aligned}
+$$
+
+**(c)**  
+已知 $p_i$ 為一個機率值，故 $0\leq p_i\leq1\ \ ,\ \ \forall i=1,2,...,m$，若是 $\pi_1>0,...,\pi_{m+1}>0$，且任意 $\pi_i$ 都是 $p_i$ 或 $1-p_i\ ,\ i=1,...,m$ 的乘積 (by (b) 小題)，所以 $p_i \neq 0\ \ and\ \ (1-p_i)\neq0\ ,\ \ \forall i=1,...,m\ \ \Rightarrow\ 0<p_i<1\ ,\ \ \forall i=1,...,m$
+
+**(d)**  
+We have shown in **(b)**
+
+## Problem 7  
+
+**(a)**  
+$$
+\begin{aligned}
+&L(z)\ =\ \frac{1}{1-F(z)}\ \int_z^\infty\ (1-F(u))\ du\\
+&L'(z)\ =\ \frac{1}{\left[1-F(z)\right]^2}\ \left[(F(z)-1)(1-F(z))+f(z)\ \int_z^\infty\left[1-F(z)\right]\ dz\right]\ =\ -1+\frac{f(z)}{[1-F(z)]^2}\ \int_z^\infty\left[1-F(z)\right]\ dz\\
+\\
+&1-exp\left[-\int_0^t\frac{1+L'(z)}{L(z)}dz\right]\ =\ 1-exp\left[-\int_0^t\frac{f(z)}{1-F(z)}dz\right]\ =\ 1-exp\left[log(1-F(t))\right]\ =\ F(t)
+\end{aligned}
+$$
+
+
+**(b)**  
+$$
+\begin{aligned}
+&S(t)\ =\ 1-F(t)\ =\ exp\left[-\int_0^t\ \frac{1+L'(z)}{L(z)}\ dz\right]\\
+&f(t)\ =\ \frac{dF(t)}{dt}\ =\ \frac{1+L'(t)}{L(t)}\ \times\ exp\left[-\int_0^t\ \frac{1+L'(z)}{L(z)}\ dz\right]\\
+&h(t)\ =\ \frac{f(t)}{S(t)}\ =\ \frac{1+L'(z)}{L(z)}
+\end{aligned}
+$$
+
+
+## Problem 8  
+
+With $\alpha_1=\alpha_2=\frac{\alpha}{2}$, and $(u,l)$ are the upper and lower bound of parameter $p$, if $X=x$ is observed
+$$
+\left\{
+\begin{aligned}
+&\frac{\alpha}{2}\ =\ P(X\leq x\ |\ p=u)\ =\ P(Y_1\geq u)\\
+&\frac{\alpha}{2}\ =\ P(X\geq x\ |\ p=l)\ =\ P(Y_2\leq l)
+\end{aligned}
+\right.
+$$
+where $Y_1\ \sim\ Beta(x+1,n-x)$ and $Y_2\ \sim\ Beta(x,n-x+1)$  
+$\therefore\ u\ =\ qbeta(1-\frac{\alpha}{2},x+1,n-x)$
+
+
