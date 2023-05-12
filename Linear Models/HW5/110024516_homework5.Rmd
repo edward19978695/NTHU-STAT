@@ -1,0 +1,249 @@
+---
+title: "Linear Model Assignment 5"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+    number_sections: true
+author: "110024516 統研碩一 邱繼賢"
+---
+\textbf{Problem 1.}  
+\textbf{a.}  
+```{r}
+travel = read.table("travel.txt", skip = 1)
+names(travel) = c("obs", "n", "x", "y")
+plot(travel$x, travel$y, xlab = "x", ylab = "y", cex = 2)
+```
+
+
+(1) x 和 y 存在著正相關的現象。
+
+(2) x 對 y 普遍存在著低估的現象，即對兩地點移動所需時間估計普遍小於實際測量後的平均值。
+
+
+
+\textbf{b.}
+ 以每組地點間的 travelers 數量為權重($w_i\ \propto\ n_i$)，建構回歸模型如下：
+\[S^{-1}Y\ =\ S^{-1}X\beta\ +\ S^{-1}\epsilon\ ,\ \text{where}\ S\ =\ diag(\frac{1}{\sqrt{w_1}},...,\frac{1}{\sqrt{w_n}})\ ,\ \text{then}\ \Sigma\ =\ SS^T\]
+```{r}
+w = travel$n
+g = lm(y ~ x, data = travel, weights = w)
+summary(g)
+```
+
+```{r echo=FALSE}
+plot(travel$x, travel$y, xlab = "x", ylab = "y", cex = 2)
+abline(g)
+```
+
+
+\newpage
+\textbf{c.}
+ In order to check model g for lack of fit. Construct saturated model ga and do the anova test to compare the two models as below :
+\[
+\left\{
+\begin{aligned}
+&H_0:\text{g model fitted better}\\
+&H_1:\text{ga model fitted better}
+\end{aligned}
+\right.\ \Longleftrightarrow\ 
+\left\{
+\begin{aligned}
+&H_0:\text{g model is not lack of fit}\\
+&H_1:\text{g model is lack of fit}
+\end{aligned}
+\right.
+\]
+```{r}
+ga = lm(y ~ factor(x), data = travel, weights = w)
+anova(g, ga)
+```
+p-value = $0.07132\ >\ 0.05\ \Rightarrow$ fail to reject $H_0$
+
+$\therefore$ We do not detect lack of fit for model g.
+
+
+
+
+\newpage
+\textbf{Problem 2.}  
+\textbf{a.}
+ Take the number of fathers in each category as weight($w_i\ \propto\ n_i$), then contruct the Weighted Least Square as below :
+\[\text{model}\ g1\ :\ S^{-1}Y\ =\ S^{-1}X\beta\ +\ S^{-1}\epsilon\ ,\ \text{where}\ S^{-1}\ =\ diag(\sqrt{w_1},...,\sqrt{w_n})\]
+
+```{r}
+height = read.table("height.txt", skip = 2)
+father_h = height[,1]
+son_h = height[,2]
+w = height[,3]
+g1 = lm(son_h ~ father_h, weights = w)
+summary(g1)
+```
+
+
+
+
+
+\textbf{b.}
+ Construct model g2 : $height\ of\ son\ =\ height\ of\ father\ +\ error\ ,\ with\ w_i\ \propto\ n_i$
+
+and then do the anova test for comparing g1 and g2 models : 
+\[
+\left\{
+\begin{aligned}
+&H_0:\text{g2 model fits better}\\
+&H_1:\text{g1 model fits better}
+\end{aligned}
+\right.
+\]
+```{r}
+g2 = lm(son_h ~ offset(father_h)-1, weights = w)
+anova(g2, g1)
+```
+
+$\because\ p-value\ <\ 0.05\ \Rightarrow\ \text{reject}\ H_0$
+
+$\therefore$ g1 model is a better model for fitting. g1 model is not approriate to be simplified to g2.
+
+
+\newpage
+\textbf{Problem 3.}  
+(i) 整理 data：  
+將 data 的第二欄數據$\times0.00001+0.742$伸縮平移到其對應的真實數據值，並以相同的 day 為一組計算其 standard deviation (std)，然後取 standard variance 為其權重 ($w_i\ \propto\ \frac{1}{std_i^2}$)，整理後資料呈現如下：
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(knitr)
+crank = read.table("crank.txt", skip = 1)
+names(crank) = c("day", "diameter")
+crank$diameter = 0.742+0.00001*crank$diameter
+
+crank = crank %>% group_by(day) %>% 
+    mutate(std = sd(diameter)) %>% 
+    mutate(weight = 1/std^2) %>% 
+    ungroup()
+kable(crank)
+```
+
+
+(ii) Test for under control or not  
+建構模型
+\[
+\left\{
+\begin{aligned}
+&g_3:diameter\ =\ \beta_0\ +\ \beta_1\ day\ +\ \epsilon\ ,\ with\ weight\ \propto\ \frac{1}{std^2}\\
+&g_4:diameter\ =\ 0.74275\ +\ \epsilon\ ,\ with\ weight\ \propto\ \frac{1}{std^2}
+\end{aligned}
+\right.
+\]
+判斷 process 是否 under control 的條件即為進行以下檢定：
+\[
+\left\{
+\begin{aligned}
+&H_0:\beta_0\ =\ 0.74275\ \ and\ \ \beta_1\ =\ 0\\
+&H_1:\beta_0\ \neq\ 0.74275\ \ or\ \ \beta_1\ \neq\ 0
+\end{aligned}
+\right.\ \Leftrightarrow\ 
+\left\{
+\begin{aligned}
+&H_0:g4\ \ fits\ \ better\\
+&H_1:g3\ \ fits\ \ better
+\end{aligned}
+\right.
+\]
+
+```{r}
+g3 = lm(diameter ~ day, weights = weight, data = crank)
+g4 = lm(diameter ~ offset(rep(0.74275,40))-1, 
+        weights = weight, data = crank)
+anova(g4,g3)
+```
+$p-value\ <\ 0.05\ \Rightarrow$ right $H_0$  
+$\therefore\ g_3$ fits better. The process is out of control. 
+
+
+(iii) Test for lack of fit  
+建構 saturated model $g_5:diameter\ \sim\ factor(day)\ ,\ with\ weight\ \propto\ \frac{1}{std^2}$  
+並進行以下檢定
+\[
+\left\{
+\begin{aligned}
+&H_0:g_3\ fits\ better\\
+&H_1:g_5\ fits\ better
+\end{aligned}
+\right.\ \Leftrightarrow\ 
+\left\{
+\begin{aligned}
+&H_0:g_3\ is\ not\ lack\ of\ fit\\
+&H_1:g_3\ is\ lack\ of\ fit
+\end{aligned}
+\right.
+\]
+
+```{r}
+g5 = lm(diameter ~ factor(day), weights = weight, data = crank)
+anova(g3, g5)
+```
+$p-value\ =\ 0.248\ >\ 0.05\ \Rightarrow$ fail to reject $H_0$  
+$\therefore$ We do not detect lack of fit for model $g_3$
+
+
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
