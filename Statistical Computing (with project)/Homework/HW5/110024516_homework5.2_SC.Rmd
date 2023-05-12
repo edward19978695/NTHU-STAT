@@ -1,0 +1,103 @@
+---
+title: "Statistical Computing Homework 5"
+author: "110024516 邱繼賢"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1.5}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+## Problem 2.  
+
+```{r message=FALSE, warning=FALSE}
+library(ISLR2)
+library(latex2exp)
+library(fields)
+library(GpGp)
+library(knitr)
+```
+
+資料前處理：  
+
+1. 將所有的 count variables 視為 approximately continuous variables，並去除三個 categorical variables *League, Division, NewLeague*  
+2. 將變數 *Salary* 中有缺失值的資料刪除，僅剩下 263 筆資料  
+3. 將資料以 8:2 的比例隨機區分為 training data 和 testing data  
+
+```{r}
+data("Hitters")
+hit_data = Hitters[,-c(14,15,20)]
+idx.na = which(is.na(hit_data$Salary))
+hit_data = hit_data[-idx.na,]
+set.seed(1239)
+idx = sample(1:263,210)
+hit_training = hit_data[idx,]
+hit_testing = hit_data[-idx,]
+```
+
+
+以變數 *Salary* 為反應變數 Y，其餘變數為解釋變數 X，然後對 training data fit linear model
+$$
+Y\ =\ X\beta\ +\ \epsilon
+$$
+
+```{r}
+model_lm = lm(Salary ~ ., hit_training)
+summary(model_lm)
+```
+
+Fit training data by GP model with Matern covariance family
+
+```{r}
+model_gp <- fit_model(y=hit_training$Salary, locs=hit_training[,-17], 
+                 covfun_name="matern15_isotropic", m_seq=c(10,30))
+```
+
+分別計算兩模型對 testing data 的測值  
+
+```{r}
+hit_testing$y.hat_lm = predict(model_lm, hit_testing[,1:16])
+hit_testing$y.hat_gp = predictions(model_gp, locs_pred = as.matrix(hit_testing[,1:16]),X_pred = rep(1,53))
+kable(hit_testing[,17:19], col.names = c("Y", "$\\hat{Y}_{LM}$", "$\\hat{Y}_{GP}$"))
+```
+
+
+計算各別的 standard error
+$$
+\sqrt{\frac{1}{n-1}\sum_{i=1}^n\left(\hat{Y}_i\ -\ Y_i\right)^2}
+$$
+
+For LM model
+```{r}
+se_lm = sqrt(1/52*sum((hit_testing$y.hat_lm-hit_testing$Salary)^2))
+se_lm
+```
+
+For GP model
+```{r}
+se_gp = sqrt(1/52*sum((hit_testing$y.hat_gp-hit_testing$Salary)^2))
+se_gp
+```
+
+
+
+```{r}
+par(mfrow = c(1,2))
+plot(hit_testing$Salary,hit_testing$y.hat_lm, xlab = "Y", ylab = TeX("$\\hat{Y}_{LM}$"), 
+     xlim = c(min(hit_testing$y.hat_lm,hit_testing$Salary),max(hit_testing$y.hat_lm,hit_testing$Salary)), 
+     ylim = c(min(hit_testing$y.hat_lm,hit_testing$Salary),max(hit_testing$y.hat_lm,hit_testing$Salary)))
+abline(0,1)
+plot(hit_testing$Salary,hit_testing$y.hat_gp, xlab = "Y", ylab = TeX("$\\hat{Y}_{GP}$"), 
+     xlim = c(min(hit_testing$y.hat_gp,hit_testing$Salary),max(hit_testing$y.hat_gp,hit_testing$Salary)), 
+     ylim = c(min(hit_testing$y.hat_gp,hit_testing$Salary),max(hit_testing$y.hat_gp,hit_testing$Salary)))
+abline(0,1)
+```
+
+我們可以看到兩模型都可以大致捕捉到變數 Y 的趨勢，但都不是 fit 的非常好，也許可以嘗試看看更為複雜的模型
+
+
+
+
+
