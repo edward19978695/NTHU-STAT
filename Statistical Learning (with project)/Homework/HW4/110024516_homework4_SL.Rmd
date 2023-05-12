@@ -1,0 +1,546 @@
+---
+title: "Statistical Learning Homework 4"
+author: "110024516 邱繼賢"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1.5}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+
+```{r message=FALSE, warning=FALSE}
+library(leaps)
+library(splines)
+library(tree)
+library(latex2exp)
+library(randomForest)
+library(caret)
+library(gbm)
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(corrplot)
+library(ROSE)
+```
+
+
+# Problem 1.  
+
+## EDA
+
+
+```{r}
+bike <- read.csv(file="bike.csv") #read data
+for (i in c(2,4,5,6,7,8)) {
+    bike[,i] = as.factor(bike[,i])
+}
+dim(bike)
+```
+
++ 此資料共 731 比觀測值，12 個變數，其中沒有任何 NA 值
+
+
+```{r}
+hist(bike$count)
+```
+
++ Response variable : count 為 discrete variable 但是分布數值很廣且左右對稱，可視為 normal continuous variable 處理  
++ Predictor variables : 其中 7 個為跟時間相關的變數，剩餘 4 個為跟天氣相關的變數，也是我們此次分析主要著重的變數  
+
+
+將跟天氣相關的 4 個變數對 count 作圖：
+
+
+```{r}
+par(mfrow = c(2,2))
+boxplot(count ~ weather, bike)
+plot(count ~ temp, bike)
+plot(count ~ hum, bike)
+plot(count ~ windspeed, bike)
+```
+
++ weather 為 nomial variable 共 3 個 levels，可明顯看出隨著天氣狀況變差，count 數量有明顯的下降  
++ temp, hum, windspeed 皆為 continuous variables，其中只有 temp 對 count 有明顯的 non-linear 趨勢變化，另兩個變數對 count 在圖形上關聯性不明顯  
+
+
+
+將全部資料以 600:131 的比例隨機分割成 training data 和 testing data：
+
+```{r}
+set.seed(1209)
+idx = sample(1:731, 131)
+train_bike = bike[-idx,]
+test_bike = bike[idx,]
+```
+
+以下建模皆是對 training data 進行，並比較其在 testing data 上的表現
+
+
+
+## Linear Regression
+
+以 count 為 response 建構 linear model，並且以 BIC criterion 對模型做 forward seletion
+
+```{r}
+fit1.1_reg = regsubsets(count~., data = train_bike[,-7], 
+                      nvmax = 28, method = "forward")
+fit1.1_reg_sum = summary(fit1.1_reg)
+```
+
+
+```{r}
+plot(fit1.1_reg_sum$bic, type = "l", xlab = "Number of variables", 
+     ylab = "BIC")
+points(16,fit1.1_reg_sum$bic[16], cex=1.5,pch=16,col=2)
+which.min(fit1.1_reg_sum$bic)
+```
+
+選取 16 個變數時，BIC 達到最小，此 16 個變數的估計係數如下：
+
+
+```{r}
+coef(fit1.1_reg, 16) %>% round(2)
+```
+
+
+```{r}
+predict.regsubsets <- function(object, newdata, id, ...) {
+  form <- as.formula(object$call[[2]])
+  mat <- model.matrix(form, newdata)
+  coefi <- coef(object, id = id)
+  xvars <- names(coefi)
+  mat[, xvars] %*% coefi
+ }
+```
+
+
+以此模型對 testing data 進行預測，並計算 MSE
+
+```{r}
+pred = predict.regsubsets(fit1.1_reg, test_bike, id=16)
+plot(pred, test_bike$count, xlab=TeX("$\\hat{y}$"), ylab = "y")
+abline(0,1)
+mean((pred-test_bike$count)^2)
+```
+
+
+
+
+
+## Non-linear Regression
+
+藉由 EDA 對變數 temp 的觀察，可以發現其對 response count 有非線性影響，以下建構 non-linear model : 對 temp 做 natural spline 取 knots = 10, 20，然後一樣使用 BIC criterion 做 forward selection
+
+
+```{r}
+fit1.2_reg = regsubsets(count ~ . - temp + ns(temp, knots = c(10,20)), 
+                        train_bike[,-7], nvmax = 30, method = "forward")
+fit1.2_reg_sum = summary(fit1.2_reg)
+```
+
+
+```{r}
+plot(fit1.2_reg_sum$bic, type="l", xlab = "Number of variables", 
+     ylab = "BIC")
+which.min(fit1.2_reg_sum$bic)
+points(14,fit1.2_reg_sum$bic[14], pch=16, cex=1.5, col=2)
+```
+
+選取 14 個變數時有最小的 BIC，估計係數如下：
+
+```{r}
+coef(fit1.2_reg, 14) %>% round(2)
+```
+
+以此 non-linear model 對 testing data 進行預測，並計算 MSE
+
+
+```{r}
+pred = predict.regsubsets(fit1.2_reg, test_bike, 14)
+plot(pred, test_bike$count, xlab = TeX("$\\hat{y}$"), ylab = "y")
+abline(0,1)
+mean((pred-test_bike$count)^2)
+```
+
+$\Rightarrow$ 相對於 linear model MSE 有所減少
+
+
+## Tree-Based Models
+
+### Tree
+
+建構 tree model，並且利用 5-fold CV 決定 terminal nodes 的數量
+
+```{r message=FALSE, warning=FALSE}
+tr = tree(count ~ ., data = train_bike)
+set.seed(12091)
+tr_cv = cv.tree(tr, FUN = prune.tree, K=5)
+plot(tr_cv$size, tr_cv$dev, type = "b")
+```
+
+
+決定 terminal nodes = 8
+
+
+```{r}
+fit1.3 = prune.tree(tr, best = 8)
+plot(fit1.3)
+text(fit1.3, pretty = 0)
+```
+
+使用此 tree model 對 testing data 進行預測，並計算 MSE
+
+
+```{r message=FALSE, warning=FALSE}
+pred = predict(fit1.3, test_bike)
+plot(pred, test_bike$count, xlab = TeX("$\\hat{y}$"), ylab = "y")
+abline(0,1)
+mean((pred-test_bike$count)^2)
+```
+
+
+
+
+
+### Random Forests
+
+Bagging of trees 只是 random forest 在 m=p 時的特例，故在此只建構 random forest model
+
+```{r}
+rf = randomForest(count ~ ., train_bike)
+plot(rf)
+```
+
+大概 ntrees > 200 後 error 趨於穩定，再來利用 OOB error 決定參數 m
+
+```{r}
+tuneRF(train_bike[,-12],train_bike[,12], ntreeTry = 200)
+```
+
+$\Rightarrow$ 決定 m=3
+
+利用 $(\text{ntree}=200\ ,\ m=3)$ 的 random forests model 對 testing data 進行預測，並計算 MSE
+
+
+```{r}
+set.seed(12090)
+fit1.4 = randomForest(count ~., train_bike, ntree=200, mtry=3, 
+                      importance = T)
+pred = predict(fit1.4, test_bike)
+plot(pred, test_bike$count, xlab = TeX("$\\hat{y}$"), ylab="y")
+abline(0,1)
+mean((pred-test_bike$count)^2)
+```
+
+
+
+
+### Boosting
+
+建構 boosting model，並利用 5-fold CV 選取 tuning parameter : n.trees, interaction.depth, shrinkage
+
+
+```{r}
+set.seed(12094)
+contrl = trainControl(method = "repeatedcv", number=5, repeats = 1)
+boots = train(count ~ ., train_bike, method = "gbm", 
+              trControl = contrl, verbose=F)
+boots
+```
+
+$\Rightarrow$ (n.trees, interaction.depth, shrinkage) = (150, 3, 0.1)
+
+以選取後的參數建構 boosting model 對 testing data 進行預測，並計算 MSE
+
+```{r}
+fit1.5 = gbm(count ~., data=train_bike, n.trees = 150, distribution = "gaussian", 
+             interaction.depth = 3, shrinkage = 0.1)
+```
+
+
+```{r message=FALSE, warning=FALSE}
+pred = predict(fit1.5, test_bike)
+plot(pred, test_bike$count, xlab = TeX("$\\hat{y}$"), ylab = "y")
+abline(0,1)
+mean((pred-test_bike$count)^2)
+```
+
+
+
+
+
+## Performance comparison
+
+
+|      | **Linear model** | **Non-Linear model** | **Tree** | **Random Forests** | **Boosting** |
+|------|------------------|----------------------|----------|--------------------|--------------|
+| MSE  | 551245.4         | 438341.7             | 878507.9 | 442875.1           |  344140.7    |
+
+
+$\Rightarrow$ Boosting model 在 MSE 上的表現最好，以下對該模型重要變數解釋
+
+
+## Important input variable and Summary
+
+
+
+```{r}
+summary(fit1.5)
+```
+
+最重要的變數是 day_since_2011 和 temp，以下僅對跟天氣有關的四個變數繪製 partial dependence plot
+
+
+```{r}
+par(mfrow = c(2,2))
+plot(fit1.5, i = "temp")
+plot(fit1.5, i = "hum")
+plot(fit1.5, i = "windspeed")
+plot(fit1.5, i = "weather")
+```
+
++ 隨著 temp 上升，response 呈現先升後降的曲線趨勢，與我們在 EDA 時的觀察一致  
++ hum 上升到 50 之後，response 數量開始下降  
++ windspeed 上升 response 隨著下降，約升至 25 時，response 降到最低  
++ weather 越差，response 數量越低，與 EDA 時的觀察一致  
+
+藉由以上天氣變數可以推斷，天氣會明顯的影響使用者對腳踏車的租借數量，舒適的天氣(溫度適中、濕度低、風速小、天氣晴朗)則租借腳踏車的數量越多，而不適的天氣(溫度過高或過低、濕度高、風速大、天氣陰雨)則租借腳踏車的數量越少。
+
+
+
+# Problem 2.  
+## EDA  
+導入資料並移除 NA 值：
+
+```{r}
+survey <- read.csv(file="airline.csv") #read data
+survey1 <- na.omit(survey) #remove missing data
+for (i in c(2,3,5,6,24)) {
+    survey1[,i] = as.factor(survey1[,i])
+}
+survey1 = survey1[,-1]
+```
+
+
+
+
+```{r}
+glimpse(survey1)
+```
+這是一筆來自航空公司的問卷調查資料，一共 103594 比觀測值，23 個變數：  
+
++ response variable : *satisfaction* 為一 2-level 類別型變數  
++ *Gender, Customer.Type, Type.of.Travel, Class* 皆為類別型變數  
++ 有一大部分變數是問卷評分，為評分 0~5 的 ordinal 變數，在以下分析將其皆視為 continuous 變數  
+
+觀察所有連續型變數各自間的 corrplot
+
+```{r}
+cor_ = cor(survey1[,-c(1,2,4,5,23)])
+colnames(cor_) = NULL
+corrplot(cor_, tl.cex=0.7)
+```
+
+*Departure.Delay.in.Minutes* 和 *Arrival.Delay.in.Minutes* 有非常強的正相關，建構模型時此二變數可能會有很強的共線性  
+
+繪製各變數對 response 影響(以下僅畫出幾個較明顯的變數)：
+
+```{r}
+p1 = ggplot(survey1, aes(x=Type.of.Travel, fill=satisfaction)) + 
+    geom_bar(position = "dodge")
+p2 = ggplot(survey1, aes(x = Class, fill = satisfaction)) + 
+    geom_bar(position = "dodge")
+p3 = ggplot(survey1, aes(x=Inflight.wifi.service, fill=satisfaction)) + 
+    geom_boxplot() + 
+    theme(axis.text.y = element_blank(), axis.ticks = element_blank())
+p4 = ggplot(survey1, aes(x=Online.boarding, fill=satisfaction)) + 
+    geom_boxplot() + 
+    theme(axis.text.y = element_blank(), axis.ticks = element_blank())
+p5 = ggplot(survey1, aes(x=Seat.comfort, fill=satisfaction)) + 
+    geom_boxplot() + 
+    theme(axis.text.y = element_blank(), axis.ticks = element_blank())
+p6 = ggplot(survey1, aes(x=Inflight.entertainment, fill=satisfaction)) + 
+    geom_boxplot() + 
+    theme(axis.text.y = element_blank(), axis.ticks = element_blank())
+
+ggarrange(p1,p2,p3,p4,p5,p6, ncol=2, nrow=3, common.legend = T, legend = "bottom")
+```
+
+
+
+將資料以 83594:2000 的比例隨機分割成 training data 和 testing data，以下建模皆是利用 training data 建構，並觀察其在 testing data 上表現
+
+```{r}
+set.seed(1210)
+idx = sample(1:103594, 2000)
+train_survey = survey1[-idx,]
+test_survey = survey1[idx,]
+```
+
+
+## Tree based model
+### Tree
+
+建構 tree model，並且利用 5-fold CV 決定 terminal nodes 的數量
+
+```{r}
+tr = tree(satisfaction ~ ., data = train_survey)
+set.seed(12121)
+tr_cv = cv.tree(tr, FUN = prune.tree, K=5)
+plot(tr_cv$size, tr_cv$dev, type = "b")
+```
+
+$\Rightarrow$ terminal nodes = 12
+
+建構 classification tree 如下
+
+```{r}
+fit2.1 = prune.tree(tr, best = 12)
+plot(fit2.1)
+text(fit2.1, pretty = 0, cex = 0.5)
+```
+
+將此模型對 testing data 進行預測並計算 ACC 和 AUC
+
+```{r}
+pred = predict(fit2.1, test_survey, type = "class")
+ACC = mean(test_survey$satisfaction==pred)
+AUC = roc.curve(test_survey$satisfaction,pred,plotit = F)$auc
+c(ACC,AUC) %>% round(3)
+```
+
+### Random Forests
+
+Bagging of trees 只是 random forest 在 m=p 時的特例，故在此只建構 random forest model
+
+```{r}
+rf = randomForest(satisfaction ~ ., train_survey)
+plot(rf)
+```
+
+$\Rightarrow$ ntree > 200 後 error 呈現穩定
+
+```{r}
+set.seed(12122)
+tuneRF(train_survey[,-23], train_survey[,23], ntreeTry = 200)
+```
+
+$\Rightarrow$ 利用 OOB eror 決定參數 mtry = 8
+
+設定參數 ntree = 200, ntry = 8 建構 RandomForests model，並對 testing model 進行預測且計算 ACC 和 AUC
+
+```{r}
+fit2.2 = randomForest(satisfaction ~., train_survey, ntree = 200, mtry=8, importance=T)
+pred = predict(fit2.2, test_survey, type = "class")
+ACC = mean(test_survey$satisfaction==pred)
+AUC = roc.curve(test_survey$satisfaction,pred,plotit = F)$auc
+c(ACC,AUC) %>% round(3)
+```
+
+
+
+
+
+
+
+### Boosting  
+
+建構 boosting model，並利用 5-fold CV 選取 tuning parameter : n.trees, interaction.depth, shrinkage
+
+```{r}
+set.seed(12101)
+contrl = trainControl(method = "repeatedcv", number=5, repeats = 1)
+boots = train(satisfaction ~ ., train_survey, method = "gbm", 
+              trControl = contrl, verbose=F)
+boots
+```
+
+$\Rightarrow$ 選定參數：ntree=150, interaction.depth=3, shrinkage=0.1
+
+以上述選定的參數建構 Boosting model 並對 testing data 進行預測且計算 ACC 和 AUC
+
+
+```{r}
+fit2.3 = gbm(I(satisfaction=="satisfied") ~., data=train_survey, n.trees = 150, 
+           distribution = "bernoulli", interaction.depth = 3, shrinkage = 0.1)
+pred = predict(fit2.3, test_survey, type = "response")
+pred_class = ifelse(pred>0.5,"satisfied","neutral or dissatisfied")
+ACC = mean(test_survey$satisfaction==pred_class)
+AUC = roc.curve(test_survey$satisfaction,pred_class,plotit = F)$auc
+c(ACC,AUC) %>% round(3)
+```
+
+
+## Performance comparison
+
+|      | **Tree** | **Random Forests** | **Boosting** |
+|------|----------|--------------------|--------------|
+| ACC  | 0.898    | 0.970              | 0.946        |
+| AUC  | 0.896    | 0.968              | 0.944        |
+
+
+$\Rightarrow$ Random Forests model 在 ACC 和 AUC 上的表現最佳
+
+觀察 Random Forests 模型的重要解釋變數
+
+```{r}
+importance(fit2.2)
+```
+
+
+
+```{r}
+varImpPlot(fit2.2, cex=0.5)
+```
+
+藉由 Decrease in ACC 可以選取出前幾個最重要的解釋變數：Inflight.wifi.service, Checkin.service, Online.boarding, Type.of.Travel, Seat.comfort, Customer.Type, Baggage.handling  
+藉由 Decrease in Gini 可以選取出錢幾個最重要的解釋變數：Online.boarding, Inflight.wifi.service, Type.of.Travel, Class  
+
+但是這種決定重要解釋變數個數的方法很主觀，沒辦法確定後面應該留幾個變數當作不重要變數，以下可以利用在模型中加入 random noise factor 的方式來輔助。  
+
+
+## Add noise factor
+
+加入兩個 noise factor :   
+
++ $z_1\ \sim\ N(0,1)$  
++ $z_2\ \sim\ Ber(p=0.5)$
+
+```{r}
+set.seed(12126)
+n = dim(survey1)[1]
+survey2 = survey1 %>% 
+    mutate(z1 = rnorm(n), z2 = as.factor(rbinom(n,1,0.5)))
+```
+
+對加入 noise factor 的資料建構 Random Forests model，一樣觀察其重要解釋變數
+
+
+```{r}
+fit2.4 = randomForest(satisfaction ~ ., survey2, ntree=200, mtry = 8, importance=T)
+```
+
+
+```{r}
+varImpPlot(fit2.4, cex = 0.5)
+```
+
+藉由 Decrease in Gini 可以看出有數個變數重要性比 $z_1$ 還要低，那麼我們就可以確定這些變數是不重要變數，而其餘剩餘的就是重要解釋變數。
+
+
+## Suggestions
+
+上述重要解釋變數中，有一部分是顧客的個人訊息，如：*Type.of.Travel, Class*等，這些變數是航空公司無法控制的，故我們只能針對 *Online.boarding, Inflignt.wifi.service, Inflight.entertainment, Seat.comfort, Leg.room.service, Ease.of.Online.booking, Checkin.service, On.board.service, Baggage.handling, Inflight.service* (重要度高到低)等變數給建議：
+
++ 你們可以先增進公司的軟體系統及電子設備，像是：線上登機系統(*Online.boarding*)、飛行途中無線網路服務(*Inflignt.wifi.service*)、飛行途中娛樂設施(*Inflight.entertainment*)，這會大幅提高顧客滿意比例。  
++ 再來改善你們飛機座位的舒適程度(*Seat.comfort*)和座位放置腳的空間(*Leg.room.service*)。
++ 最後可以再多注意你們公司在 Checkin (*Checkin.service*), On board (*On.board.service*), Inflight (*Inflight.service*) 各階段的服務品質。
+
+
+
+
+
+
