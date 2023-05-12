@@ -1,0 +1,104 @@
+---
+title: "Swiss Roll Example"
+
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    collapsed: false
+    smooth_scroll: false
+---
+
+```{r}
+data = read.table("swiss_roll.dat.txt")
+sol = read.table("swiss_roll_sol.dat.txt")
+# 會跑非常久，可以只選取部分資料進行
+# set.seed(1220)
+# choose = sample(1:3000, 1000)
+# data = data[choose,]
+# sol = sol[choose,]
+```
+
+
+```{r message=FALSE, warning=FALSE}
+library(scatterplot3d)
+scatterplot3d(data[,1], data[,2], data[,3], color = sol[,1], pch = 16)
+```
+
+$$
+\left(X_i\ ,\ Y_i\right)\ \overset{iid}{\sim}\ U\left[(0,4\pi)\ \times\ (0,4\pi)\right]\ \rightarrow\ \left(\frac{X_i}{5}\cos\left(X_i\right)\ ,\ \frac{X_i}{5}\sin\left(X_i\right)\ ,\ Y_i\right)
+$$
+
+```{r}
+scatterplot3d(data[,1], data[,3], data[,2], color = sol[,1], pch = 16, angle = 40, scale.y = 0.5)
+```
+
+
+
+
+### Standard MDS dimension reduction
+
+```{r}
+D = dist(data, method = "euclidean")
+mds = cmdscale(D, k=2, eig=T)
+```
+
+```{r}
+mds.point = mds$points
+scatterplot3d(mds.point[,2], rep(0,3000), mds.point[,1], color = sol[,1], pch = 16, scale.y = 0, ylab = "")
+```
+
+
+
+### ISOMAP dimension reduction
+```{r message=FALSE, warning=FALSE}
+library(vegan)
+iso = isomap(D, ndim = 2, k = 5)
+```
+
+
+```{r}
+iso.point = data.matrix(iso$points)
+scatterplot3d(-iso.point[,1], rep(0,3000), iso.point[,2], color = sol[,1], pch = 16, 
+              scale.y = 0, ylab = "")
+```
+
+
+
+
+
+
+### Distance matrices
+```{r}
+round(as.matrix(D)[1:6,1:6],2)
+```
+
+
+```{r}
+graph.dist = isomapdist(D, k = 5)
+round(as.matrix(graph.dist)[1:6,1:6],2)
+```
+
+
+
+
+
+
+
+
+
+
+
+### Scree Plot for ISOMAP
+```{r message=FALSE, warning=FALSE}
+par(mfrow = c(1,1))
+plot(iso$eig[1:10], type = "bl")
+```
+
+
+
+
+
+
+
+
