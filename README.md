@@ -3,4 +3,4 @@
 
 碩一上 (GPA：4.19)
 
-  數理統計 Mathematical Statistics：A
+\ \ 數理統計 Mathematical Statistics：A
