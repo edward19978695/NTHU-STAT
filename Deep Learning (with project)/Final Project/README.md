@@ -3,4 +3,4 @@
 (code 請見：https://drive.google.com/drive/folders/1vMCbTlQhd0UcZGnnK94BEKtGdtuOfziz?usp=sharing)
 
 
-
+![image](https://github.com/edward19978695/NTHU-STAT/blob/main/Deep%20Learning%20(with%20project)/Final%20Project/movie_sentiment.jpg)
