@@ -1,0 +1,102 @@
+---
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+## 2.  
+### (a)  
+以下為將此 13 個變數的 covariance matrix 計算 eigenvalues 和 eigenvectors 後所得的 principal components
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(dplyr)
+library(knitr)
+car_data = read.csv("CarPrice.csv")
+car_data2 = car_data %>% 
+    select(wheelbase, carlength, carwidth, carheight, curbweight, enginesize, boreratio, stroke, compressionratio, horsepower, peakrpm, citympg, highwaympg)
+pc = princomp(car_data2)
+evector = round(summary(pc)$loadings[1:13,],2)
+evector[abs(evector) < 0.1] = ""
+pc.name = c()
+for (i in 1:13) {
+  pc.name = c(pc.name,paste("PC",i,sep = ""))
+}
+kable(evector, col.names = pc.name)
+```
+各 principal components 的 variances 即為 covariance matrix 由大到小的 eigenvalues 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+names(pc$sdev) = pc.name
+kable(round(pc$sdev^2, 2), col.names = c("variance"))
+```
+
+
+### (b)  
+繪製各 principal components 的 scree plot ，以及累計的 variance 比例
+
+```{r echo=FALSE}
+plot(pc$sdev^2, type = "l", xlab = "PC", ylab = "variance", main = "scree plot")
+points(pc$sdev^2, pch = 16)
+summary(pc)
+```
+
++ 前兩個 principal components 的變異程度遠大於剩餘的 principal components  
++ 前兩個 principal components 所佔的變異程度比例已經超過 99%  
+
+我會只選擇前兩個 principal components：  
+$$\hat{y}_1\ =\ 0.812\times curbweight\ -\ 0.58\times peakrpm$$
+可以解釋為 *curbweight* 和 *peakrpm* 這兩個變數間的加權差距(weighted difference)  
+$$\hat{y}_2\ =\ 0.576\times curbweight\ +\ 0.814\times peakrpm$$
+可以解釋為 *curbweight* 和 *peakrpm* 這兩個變數的加權相加(weighted sum)  
+
+
+### (c)  
+計算 statistical distances 後，觀察到只有兩個資料點小於 $1.4^2$
+
+```{r echo=FALSE}
+a = scale(car_data2,center = T, scale = F)
+Si = solve(cov(car_data2))
+distance = apply(a, 1, function(x) {
+    x = as.matrix(x)
+    t(x)%*%Si%*%x
+})
+round(distance,2)
+```
+
+故有 $\frac{2}{205}\ =\ 0.98\%$ 的觀測值落在該區間。  
+
+### (d)  
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(ellipse)
+Lambda = matrix(c(pc$sdev[1]^2,0,0,pc$sdev[2]^2),2,2)
+
+plot(ellipse(Lambda, centre = c(0,0), level = pchisq(1.4^2,2)), type = "l", 
+     lwd = 2, xlab = "PC1", ylab = "PC2", xlim = c(-1000,1500), ylim = c(-1000,1000))
+points(x = pc$scores[,1][distance>=1.4^2], y = pc$scores[,2][distance>=1.4^2], col = "grey")
+points(x = pc$scores[,1][distance<1.4^2], y = pc$scores[,2][distance<1.4^2], col = 2, pch = 16)
+```
+
++ 資料點的呈現看起來有像是數條正斜率的平行線分佈，是因為 $0.812\hat{y}_2\ -\ 0.576\hat{y}_1\ =\ 0.995peakrpm$，而變數 *peakrpm* 為一離散變數，有 23 個 levels。  
++ 相較於原始 13 個變數都考慮時的狀況，現在只考慮前兩個 principal components 時，statistical distance < $1.4^2$ 的資料點明顯多了很多，是因為使用 principal component 的方法將原本 13 維度的資料點投影到由 $\hat{y}_1$ 和 $\hat{y}_2$ 所形成的 2 維空間(也即變數 *curbweight* 和 *peakrpm* 所形成的 2 維空間)，這樣的行為將很多的資料點投影到了中間，進而落在橢圓之中。  
++ 原本 13 的變數計算 statistical distance < $1.4^2$ 的兩個資料點(即上圖紅點)，也一樣落進了橢圓之中，因為我們所選的前兩個 principal components 捕捉到了大部分的資料變異特徵。
+
+
+### (e)  
+計算 $r_{PC1,price}$ 和 $r_{PC2,price}$ 的數值如下
+
+```{r echo=FALSE}
+r1 = round(cor(pc$scores[,1], car_data$price),3)
+r2 = round(cor(pc$scores[,2], car_data$price),3)
+c(r1,r2)
+```
+
+
+
+
+
