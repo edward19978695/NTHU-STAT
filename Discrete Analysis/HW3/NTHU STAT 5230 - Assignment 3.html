@@ -1,0 +1,72 @@
+
+<!-- saved from url=(0082)http://www.stat.nthu.edu.tw/~swcheng/Teaching/stat5230/assignment/assignment3.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=Big5">
+<meta http-equiv="Content-Language" content="zh-tw">
+
+<meta name="GENERATOR" content="Microsoft FrontPage 6.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>NTHU STAT 5230 - Assignment 3</title>
+</head>
+
+<body>
+
+<h1><font face="Arial"><b>Assignment 3</b></font></h1>
+<p style="margin-top: 0; margin-bottom: 0">
+<span lang="EN-US" style="font-size: 12.5pt; font-family: Arial">&nbsp;&nbsp;&nbsp;
+</span></p>
+<p style="margin-top: 0; margin-bottom: 0"><font face="Arial">The question 
+concerns data from a case-control study of esophageal cancer in Ile-et-Vilaine, 
+France. The data is distributed with R and maybe obtained along with a 
+description of the variables by :</font></p>
+<p style="margin-top: 0; margin-bottom: 0"><font face="Courier New">&gt; data(esoph)</font></p>
+<p style="margin-top: 0; margin-bottom: 0"><font face="Courier New">&gt; esoph</font></p>
+<p class="MsoNormal" style="margin-top: 0; margin-bottom: 0"><b>
+<span lang="EN-US" style="font-family: Courier New">&nbsp;&nbsp; agegp&nbsp;&nbsp;&nbsp;&nbsp; alcgp&nbsp;&nbsp;&nbsp; tobgp 
+ncases ncontrols</span></b></p>
+<p class="MsoNormal" style="margin-top: 0; margin-bottom: 0"><b>
+<span lang="EN-US" style="font-family: Courier New">1&nbsp; 25-34 0-39g/day 
+0-9g/day&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 40</span></b></p>
+<p class="MsoNormal" style="margin-top: 0; margin-bottom: 0"><b>
+<span lang="EN-US" style="font-family: Courier New">2&nbsp; 25-34 0-39g/day&nbsp;&nbsp;&nbsp; 
+10-19&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 10</span></b></p>
+<p class="MsoNormal" style="margin-top: 0; margin-bottom: 0"><b>
+<span lang="EN-US" style="font-family: Courier New">3&nbsp; 25-34 0-39g/day&nbsp;&nbsp;&nbsp; 
+20-29&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 6</span></b></p>
+<p class="MsoNormal" style="margin-top: 0; margin-bottom: 0"><b>
+<span lang="EN-US" style="font-family: Courier New">&nbsp;&nbsp; …deleted…</span></b></p>
+<p class="MsoNormal" style="margin-top: 0; margin-bottom: 0"><b>
+<span lang="EN-US" style="font-family: Courier New">88&nbsp;&nbsp; 75+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 120+&nbsp;&nbsp;&nbsp; 
+10-19&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1</span></b></p>
+<p style="margin-top: 0; margin-bottom: 0"><font face="Courier New">&gt; help(esoph)</font></p>
+<ol>
+	<li>
+	<p style="margin-top: 0; margin-bottom: 0"><font face="Arial">Fit a binomial 
+	GLM with interaction effects between all three predictors. Start from the 
+	saturated model and use backward elimination to simplify the model as far as 
+	is reasonable. </font></p></li>
+	<li>
+	<p style="margin-top: 0; margin-bottom: 0"><font face="Arial">All three 
+	factors are ordered and so special contrasts have been used appropriate for 
+	ordered factors involving linear term, quadratic term, cubic term, ..., etc. 
+	Further simplification of the model is possible by eliminating some of these 
+	terms. Use the </font><tt><font face="Arial">unclass()</font></tt><font face="Arial"> 
+	command in R to convert some or all factors to a numerical representation 
+	and show how the model may be simplified. </font></p></li>
+	<li>
+	<p style="margin-top: 0; margin-bottom: 0"><font face="Arial">Does your 
+	final model fit the data? Is the test you make accurate for this data?
+	</font></p></li>
+	<li>
+	<p style="margin-top: 0; margin-bottom: 0"><font face="Arial">What is the 
+	predicted effect of moving to a category one higher in alcohol consumption? 
+	Compute a 95% confidence interval for this predicted effect. </font></p></li>
+	<li>
+	<p style="margin-top: 0; margin-bottom: 0"><font face="Arial">Bearing in 
+	mind that this is a case-control study, what can be said about the predicted 
+	probability that a 25 year old who does not smoke or drink will get 
+	esophageal cancer? </font></p></li>
+</ol>
+
+
+
+</body></html>

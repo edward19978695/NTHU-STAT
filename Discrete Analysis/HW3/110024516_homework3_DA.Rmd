@@ -1,0 +1,164 @@
+---
+title: "Applied Multivariate Analysis Homework 4"
+author: "110024516 邱繼賢"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1.5}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+## Problem 1.  
+Construct a binomial GLM with logit link function
+$$
+\begin{aligned}
+&y_x\ \sim\ Bin(n_x\ ,\ p_x)\\
+&logit(p_x)\ =\ \eta_x\ =\ X\beta
+\end{aligned}
+$$
+where $X$ is a model matrix which contains main and interaction effects between all three predictors, *agegp, alcgp, tobgp*  
+Then, using the *step()* function which is a backward elimination by comparing AIC values and choose the smallest one.  
+Stop the algorithm when the AIC value by doing nothing is the smallest one.  
+
+```{r message=FALSE, warning=FALSE}
+data("esoph")
+fit1 = glm(cbind(ncases, ncontrols) ~ agegp*alcgp*tobgp
+           , esoph, family = binomial)
+step(fit1)
+```
+
+By the result above, we can simplify our model into
+$$
+\begin{aligned}
+&y_x\ \sim\ Bin(n_x\ ,\ p_x)\\
+&logit(p_x)\ =\ \eta_x\ =\ X\beta
+\end{aligned}
+$$
+where model matrix $X$ only contains the main effect of the predictors *agegp, alcgp, tobgp*
+
+```{r}
+fit1.2 = glm(cbind(ncases, ncontrols) ~ agegp+alcgp+tobgp
+           , esoph, family = binomial)
+drop1(fit1.2, test = "Chi")
+```
+
+All the three predictors *agegp, alcgp, tobgp* are having significant contribution for our model.  
+
+
+```{r}
+summary(fit1.2)
+```
+
+We can see that effect *agegp.L, agegp.Q, alcgp.L, alcgp.C, tobgp.L* are significant in Wald test, but there are many covariate classes with small $n_i\ 's$. By Hauck-Donner effect the standard errors can be over-estimated and so we need to be careful.  
+
+
+
+
+## Problem 2.  
+Now, convert the three predictors *agegp, alcgp, tobgp* as numerical variable, so we do not have to represent them by dummy variables. Then the model can be simplified as 
+$$
+\begin{aligned}
+&y_x\ \sim\ Bin(n_x\ ,\ p_x)\\
+&logit(p_x)\ =\ \eta_x\ =\ \beta_0\ +\ \beta_1\times agegp\ +\ \beta_2\times(agegp)^2\ +\ \beta_3\times alcgp\ +\ \beta_4\times tobgp
+\end{aligned}
+$$
+where
+$$
+agegp\ =\ 
+\left\{
+\begin{aligned}
+&1\ ,\ 25\sim34\ \text{years}\\
+&2\ ,\ 35\sim44\\
+&3\ ,\ 45\sim54\\
+&4\ ,\ 55\sim64\\
+&5\ ,\ 65\sim74\\
+&6\ ,\ 75+
+\end{aligned}
+\right.\ \ ,\ \ 
+alcgp\ =\ 
+\left\{
+\begin{aligned}
+&1\ ,\ 0\sim39\ \text{gm/day}\\
+&2\ ,\ 40\sim79\\
+&3\ ,\ 80\sim119\\
+&4\ ,\ 120+
+\end{aligned}
+\right.\ \ ,\ \ 
+tobgp\ =\ 
+\left\{
+\begin{aligned}
+&1\ ,\ 0\sim9\ \text{gm/day}\\
+&2\ ,\ 10\sim19\\
+&3\ ,\ 20\sim29\\
+&4\ ,\ 30+
+\end{aligned}
+\right.
+$$
+
+
+```{r}
+fit2 = glm(cbind(ncases, ncontrols) ~ unclass(agegp) + I(unclass(agegp)^2) + unclass(alcgp) + unclass(tobgp)
+           , esoph, family = binomial)
+drop1(fit2, test = "Chi")
+```
+
+All the four variables *agegp, (agegp)^2, alcgp, tobgp* are having significant (in deviance-based test) contribution for our model.  
+
+
+
+## Problem 3.  
+Test fot goodness-of-fit
+$$
+\left\{
+\begin{aligned}
+&H_0\ :\ \text{The model fits good enough}\\
+&H_1\ :\ \text{The model does not fit well}
+\end{aligned}
+\right.
+$$
+
+```{r}
+summary(fit2)
+```
+
+We can see that the deviance $=\ 93.172$ on 83 degrees of freedom, and under $H_0\ :\ D_S\ \overset{a}{\sim}\ \chi^2_{83}\ \Rightarrow\ \text{p-value}\ =\ P\left(\chi^2_{83}\ >\ D_S\right)\ =\ 0.2087865\ >\ 0.05$  
+
+$\therefore$ Do not reject $H_0$, the model fits the data well.  
+
+However, the chi-square (null distribution) is only an approximation that becomes more accurate as the $n_i\ 's$ increase (often suggest $n_i\ \geq\ 5$). There are several covariate classes whose $n_i\ 's$ are pretty small, so the test might not be accurate for this data.  
+
+
+
+## Problem 4.  
+When moving to a category one higher in alcohol concumption, the log-odds of *ncases* increase by $\hat{\beta}_3\ =\ 1.06511$, or the odds of *ncases* increase to $exp\left(\hat{\beta}_3\right)\ =\ 290.1158\%$
+
+
+```{r}
+c(fit2$coef[4], exp(fit2$coef[4]))
+```
+
+And the $95\%$ confidence intervals for this predicted effect (in log-odds and odds), which are computed using profile likelihood methods, are shown as below. 
+
+```{r message=FALSE, warning=FALSE}
+library(MASS)
+confint(fit2)[4,]
+exp(confint(fit2)[4,])
+```
+
+
+
+
+
+## Problem 5.  
+Because this is a case-control study, namely retrospective study :  
+
++ $\beta_1\ ,\ \beta_2\ ,\ \beta_3\ ,\ \beta_4$ are estimable  
++ $\beta_0$ is inestimable $\Rightarrow$ cannot estimate probability  
+
+Therefore, we can only predict the effect of variable (such as **Problem 4.**), and can do nothing about predicting probability.
+
+
+
+
