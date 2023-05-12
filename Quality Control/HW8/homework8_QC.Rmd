@@ -1,0 +1,112 @@
+---
+title: "品質管制 Homework 8"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+    number_sections: true
+author: "110024516 統研碩一 邱繼賢"
+---
+\textbf{4.20}  
+\[(\hat{\mu}_0\ ,\ \hat{\sigma}_0)\ =\ (11.5\ ,\ 1.5)\ ,\ (k^+\ ,\ h^+)\ =\ (0.5\ ,\ 3.502)\ ,\ \text{nomial}\ ARL_0\ =\ 200\]
+
+The chart (4.46)-(4.47) in this case is equivalent to the chart (4.7)-(4.8) for detecting a distributional shift from $N(0,1)$ to $N(\frac{\mu_0-\hat{\mu}_0}{\hat{\sigma}_0},(\frac{\sigma_0}{\hat{\sigma}_0})^2)$
+
+\textbf{(i)}  
+\[
+\begin{aligned}
+&X_n\ \sim\ N(10\ ,\ 1^2)\ \Rightarrow\ \frac{X_n-\hat{\mu}_0}{\hat{\sigma}_0}\ \sim\ N(\frac{10-11.5}{1.5}\ ,\ (\frac{1}{1.5})^2)\ =\ N(-1\ ,\ (\frac{1}{1.5})^2)\ \Rightarrow\ \delta\ =\ -1\ ,\ \lambda\ =\ \frac{1}{1.5}\ \\
+&\therefore\ k^*\ =\ \frac{k^+-\delta}{\lambda\ \sigma}\ =\ (0.5+1)\times1.5\ =\ 2.25\ ,\ h^*\ =\ \frac{h^+}{\lambda\ \sigma}\ =\ 3.502\times1.5\ =\ 5.253\\
+&\text{take}\ (k^*\ ,\ h^*)\ \text{into Siegmund formula}\ \Rightarrow\ ARL_0\ =\ 346272677538
+\end{aligned}
+\]
+
+\textbf{(ii)}  
+\[
+\begin{aligned}
+&X_n\ \sim\ N(10\ ,\ 1.5^2)\ \Rightarrow\ \frac{X_n-\hat{\mu}_0}{\hat{\sigma}_0}\ \sim\ N(\frac{10-11.5}{1.5}\ ,\ 1^2)\ =\ N(-1\ ,\ 1^2)\ \Rightarrow\ \delta\ =\ -1\ ,\ \lambda\ =\ 1\ \\
+&\therefore\ k^*\ =\ \frac{k^+-\delta}{\lambda\ \sigma}\ =\ 0.5+1\ =\ 1.5\ ,\ h^*\ =\ \frac{h^+}{\lambda\ \sigma}\ =\ 3.502\\
+&\text{take}\ (k^*\ ,\ h^*)\ \text{into Siegmund formula}\ \Rightarrow\ ARL_0\ =\ 268313.2
+\end{aligned}
+\]
+
+
+\textbf{(iii)}  
+\[
+\begin{aligned}
+&X_n\ \sim\ N(11.5\ ,\ 1^2)\ \Rightarrow\ \frac{X_n-\hat{\mu}_0}{\hat{\sigma}_0}\ \sim\ N(\frac{11.5-11.5}{1.5}\ ,\ (\frac{1}{1.5})^2)\ =\ N(0\ ,\ (\frac{1}{1.5})^2)\ \Rightarrow\ \delta\ =\ 0\ ,\ \lambda\ =\ \frac{1}{1.5}\ \\
+&\therefore\ k^*\ =\ \frac{k^+-\delta}{\lambda\ \sigma}\ =\ 0.5\times1.5\ =\ 0.75\ ,\ h^*\ =\ \frac{h^+}{\lambda\ \sigma}\ =\ 3.502\times1.5\ =\ 5.253\\
+&\text{take}\ (k^*\ ,\ h^*)\ \text{into Siegmund formula}\ \Rightarrow\ ARL_0\ =\ 13494.22
+\end{aligned}
+\]
+
+
+\textbf{(iv)}  
+\[
+\begin{aligned}
+&X_n\ \sim\ N(13\ ,\ 2^2)\ \Rightarrow\ \frac{X_n-\hat{\mu}_0}{\hat{\sigma}_0}\ \sim\ N(\frac{13-11.5}{1.5}\ ,\ (\frac{2}{1.5})^2)\ =\ N(1\ ,\ (\frac{2}{1.5})^2)\ \Rightarrow\ \delta\ =\ 1\ ,\ \lambda\ =\ \frac{2}{1.5}\ \\
+&\therefore\ k^*\ =\ \frac{k^+-\delta}{\lambda\ \sigma}\ =\ (0.5-1)\times0.75\ =\ -0.375\ ,\ h^*\ =\ \frac{h^+}{\lambda\ \sigma}\ =\ 3.502\times0.75\ =\ 2.6265\\
+&\text{take}\ (k^*\ ,\ h^*)\ \text{into Siegmund formula}\ \Rightarrow\ ARL_0\ =\ 6.764607
+\end{aligned}
+\]
+
+
+\textbf{結論：}  
+(1) (i)(ii)(iii)所計算出的$actual\ ARL_0$皆遠大於$nominal\ ARL_0\ =\ 200$，(iv)算出的則遠小於200。
+
+(2) 由(i)和(ii)可以得知，在$\mu_0$相同的情況下，$\sigma_0$的數值越接近$\hat{\sigma}_0=1.5$，最後所算出的$ARL_0$數值越小。
+
+(3) 由(i)和(iii)可以得知，在$\sigma_0$相同的情況下，$\mu_0$的數值越接近$\hat{\mu}_0=11.5$，最後所算出的$ARL_0$數值越小。
+
+(4) 由(iv)可以得知，$(\mu_0,\sigma_0)$皆分別大於$(\hat{\mu}_0,\hat{\sigma}_0)$時，所計算出的$ARL_0$會遠小於200，因為Siegmund formula是設計來偵測正向的平均偏移。
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
