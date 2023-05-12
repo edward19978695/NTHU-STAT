@@ -1,0 +1,121 @@
+---
+title: "Applied Multivariate Analysis Homework 4"
+author: "110024516 邱繼賢"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1.2}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+## (a)  
+將 13 個變數的 correlation matrix 做 eigen decomposition 獲得前兩個 principal components，並且繪製 biplot
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(devtools)
+#install_github("vqv/ggbiplot")
+library(ggbiplot)
+library(knitr)
+```
+
+```{r echo=FALSE}
+car_data = read.csv("CarPrice_Assignment.csv", header = T)
+car_data.2 = car_data %>% select(wheelbase,carlength,carwidth,carheight,
+                                 curbweight,enginesize,boreratio,stroke,
+                                 compressionratio,horsepower,peakrpm,citympg,highwaympg)
+car_pca = princomp(car_data.2, cor = T)
+evector = round(summary(car_pca)$loadings[1:13,],2)
+evector[abs(evector) < 0.1] = ""
+pc.name = c()
+for (i in 1:13) {
+  pc.name = c(pc.name,paste("PC",i,sep = ""))
+}
+kable(evector[,1:2], col.names = pc.name[1:2])
+```
+
+
+
+```{r echo=FALSE, fig.height=5, fig.width=10}
+ggbiplot(car_pca, groups = car_data$fuelsystem, scale = 0, size = 1, alpha = 0.5) + 
+    labs(color = "fuelsystem")
+```
+
++ Biplot 是以前兩個 principal components 為軸，將資料點投影到兩軸所形成的二維平面，而 13 個變數也以各自所占前兩個 principal components 的比例形成在二維平面中的向量。  
++ 將資料點以類別型變數 *fuelsystem* 做分類，可以看到相同顏色的資料點在 biplot 明顯的聚集在一起。  
++ 變數 *fuelsystem* 中前三多的類別 *mpfi, 2bbl, idi*，分別聚集於 biplot 中的右方、左方以及上方。  
+
+由此可知，藉由 principal components analysis 將資料的維度降至二維，依舊可以保留資料依變數 *fuelsystem* 不同所形成的群聚特徵。  
+
+
+
+## (b)  
+將 205 筆資料(standardized)的 correlation matrix $R_{205\times205}$ 和 1 的差距當作距離：$D_{205\times205}\ = 1_{205}1_{205}'-R_{205\times205}$，然後進行 multidimensional scaling：  
+
+(1) 從距離矩陣 $D_{205\times205}$ 求得 data matrix 的 $n\times n$ inner products matrix $B_{205\times205}\ =\ XX^T$
+
+(2) 然後對矩陣 $B$ 做 eigen decomposition
+$$
+B\ =\ U_1\Lambda_1U_1^T
+$$
+where $U_1$ contains the first q eigenvectors and $\Lambda_1^{\frac{1}{2}}\ =\ diag(\lambda^{\frac{1}{2}}_1,...,\lambda^{\frac{1}{2}}_q)$ the q non-zero eigenvalues with $\lambda_1\geq\lambda_2\geq...\geq\lambda_q$.  
+
+(3) 只選取矩陣 $U_1\Lambda_1^{\frac{1}{2}}$ 的前兩個 columns，將資料降維到以前兩個 eigenvectors 為兩軸所形成的平面
+
+```{r echo=FALSE}
+D_cor = 1-cor(t(scale(car_data.2)))
+MDS_cor = cmdscale(D_cor, k = 2, eig = T)
+MDS_cor2 = as.data.frame(MDS_cor$points)
+ggplot(MDS_cor2) + 
+    geom_point(aes(-V1,V2,color = car_data$fuelsystem), size = 1, alpha = 0.5) + 
+    labs(x = "Coordinate 1", y = "Coordinate 2", color = "fuelsystem")
+```
+
++ 兩軸的範圍都很小，這是因為我們計算距離是使用 $1-r_{ij}$，此值最大值只為 2，並不是資料點之間真實的距離，故降維後的資料點就會十分集中在一個小範圍。  
++ 降維後顏色相同的資料點，依舊有聚集的現象。  
++ 變數 *fuelsystem* 中 *mpfi, 2bbl, idi* 三個類別在二維平面的分布位置一樣大致落在右方、左方、上方。  
+
+以 $1-r_{ij}$ 為距離進行 multidimensional scaling analysis 的降維方式，雖然沒辦法呈現原始資料的真實距離，但還是可以呈現出資料依據變數 *fuelsystem* 不同所形成的聚集現象。  
+
+
+\newpage
+## (c)  
+以 205 筆資料間的 Euclidean distance matrix $D$ 進行和 **(b)** 一樣的 multidimensional scaling analysis 將資料降維至二維平面
+
+```{r echo=FALSE, fig.height=5, fig.width=10}
+D_car = dist(scale(car_data.2))
+MDS_eu = cmdscale(D_car, k = 2, eig = T)
+MDS_eu2 = as.data.frame(MDS_eu$points)
+ggplot(MDS_eu2) + 
+    geom_point(aes(-V1,V2, color = car_data$fuelsystem), size = 2, alpha = 0.5) + 
+    labs(x = "Coordinate 1", y = "Coordinate 2", color = "fuelsystem")
+```
+
++ 資料分佈和 **(a)** 中的 biplot 完全一樣。  
+
+因為用 Euclidean distance 為距離所求出的 $B\ =\ XX^T\ =\ \left(U\Lambda^{\frac{1}{2}}\right)\left(U\Lambda^{\frac{1}{2}}\right)^T$，其中 $X$ 就會是原始資料 standardized 後的 data matrix，然而 $X\ =\ U\Lambda^{\frac{1}{2}} V^T$，$U\Lambda^{\frac{1}{2}}\ =\ XV$ 就是 PCA scores，所以兩個圖形的資料點分佈才會完全一致。
+
+
+```{r}
+library(vegan)
+iso = isomap(D_car, ndim = 2, k = 10)
+graph_dis = as.matrix(isomapdist(D_car, k=10))
+round(graph_dis[1:6,1:6],2)
+```
+
+
+```{r}
+ggplot(as.data.frame(iso$points)) + 
+    geom_point(aes(-Dim1, Dim2, color = car_data$fuelsystem), size = 2, alpha = 0.5) + 
+    labs(x = "Coordinate 1", y = "Coordinate 2", color = "fuelsystem")
+```
+
+
+
+
+
+
+
