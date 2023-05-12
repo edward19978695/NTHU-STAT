@@ -1,0 +1,420 @@
+---
+title: "Statistical Learning Homework 3"
+author: "110024516 邱繼賢"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1.5}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+# Problem 1.  
+
+
+```{r message=FALSE, warning=FALSE}
+library(AppliedPredictiveModeling) #install package first!!
+library(corrplot)  #correlation plot
+library(leaps)
+library(latex2exp)
+library(glmnet)
+library(knitr)
+library(pls)
+```
+
+
+```{r}
+data(ChemicalManufacturingProcess)
+dim(ChemicalManufacturingProcess)
+```
+
++ 原始資料共有 176 筆觀測值，58 個變數，其中有 12 個和 biological starting material 有關，45 個和 manufacturing process 有關，剩餘 1 個為 response variable *Yield*  
+
+```{r}
+sum(is.na(ChemicalManufacturingProcess))
+```
+
++ 發現資料中共有 106 個數值缺失，將有缺失值的 observation 移除  
+
+```{r}
+CMP <- na.omit(ChemicalManufacturingProcess) #remove missing data
+dim(CMP)
+```
+
++ 剩餘資料僅剩 152 筆觀測值，但都沒有任何數值有所缺失，以下分析就使用此資料  
+
+```{r message=FALSE, warning=FALSE}
+#rename variable
+B_name = c()
+for (i in 1:12){
+  B_name[i] = paste("B",i,sep="")
+}
+P_name = c()
+for (i in 1:45){
+  P_name[i] = paste("P",i,sep="")
+}
+names(CMP) <- c("Yield",B_name, P_name)
+
+corrplot::corrplot(cor(CMP), tl.cex = 0.4)
+```
+
++ biological starting material 的變數間大多呈現中至高度正相關，建構模型時可能會具有共線性  
++ manufacturing process 的變數間有正相關也有負相關，*P25~P31* 間互相有著高度正相關  
+
+將資料以 120:32 的比例隨機分割成 train & test data set，以下各種建構模型方法皆是對 train data 建模，然後在 test data 上比較其表現
+
+```{r}
+set.seed(1116)
+idx = sample(1:152,120)
+train_data = CMP[idx,]
+test_data = CMP[-idx,]
+```
+
+
+## Subset Selection via Criterion based  
+
+利用 Cp, BIC, $R^2_a$ 等 criterion 進行 model selection，以此來決定模型中應該保留的變數個數。因為全部共有 57 個解釋變數，總共有 $2^{57}$ 種模型選擇，若全部模型都對 criterion 計算會太花時間，故此僅使用 forward 的方式選取模型：
+
+```{r message=FALSE, warning=FALSE}
+regfit = regsubsets(Yield~., train_data, nvmax=57,
+                    really.big = T,method = "forward")
+regfit_sum = summary(regfit)
+```
+
+
+```{r}
+which.min(regfit_sum$cp)
+which.min(regfit_sum$bic)
+which.max(regfit_sum$adjr2)
+```
+
+
+```{r}
+par(mfrow = c(1,3))
+plot(regfit_sum$cp,type="l",ylab="Cp",xlab="num of variables")
+points(13,regfit_sum$cp[13],col=2,pch=16,cex=1.2)
+plot(regfit_sum$bic,type="l",ylab="BIC",xlab="num of variables")
+points(4,regfit_sum$bic[4],col=2,pch=16,cex=1.2)
+plot(regfit_sum$adjr2,type="l",ylab=TeX("$R^2_a$"),xlab="num of variables")
+points(26,regfit_sum$adjr2[26],col=2,pch=16,cex=1.2)
+```
+
++ 三種 criterion 所決定的解釋變數個數分別為：13, 4, 26  
+
+
+所選取出變數係數的估計值如下：
+
+```{r}
+round(coef(regfit,13),3)
+round(coef(regfit,4),3)
+round(coef(regfit,26),3)
+```
+
+## Subset Selection via Cross-Validation  
+將 train data 隨機分割成五份做 5-fold CV，然後分別計算模型在不同解釋變數個數下對 Validation set 的 MSE，以此來決定模型解釋變數個數：
+
+```{r}
+k = 5 ; n = dim(train_data)[1] ; p = dim(train_data)[2]-3
+set.seed(11137)
+fold_idx = sample(rep(1:k, length = n))
+cv.errors = matrix(NA, k, p)
+```
+
+
+```{r}
+predict.regsubsets <- function(object, newdata, id, ...) {
+  form <- as.formula(object$call[[2]])
+  mat <- model.matrix(form, newdata)
+  coefi <- coef(object, id = id)
+  xvars <- names(coefi)
+  mat[, xvars] %*% coefi
+ }
+```
+
+
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+for (j in 1:k) {
+    best.fit = regsubsets(Yield~., data=train_data[fold_idx!=j,],
+                          nvmax = p,really.big = T,method = "backward")
+    for (i in 1:p) {
+        pred = predict.regsubsets(best.fit, train_data[fold_idx==j,],id=i)
+        cv.errors[j,i] = mean((train_data$Yield[fold_idx==j]-pred)^2)
+    }
+}
+```
+
+
+```{r}
+plot(cv.errors[1,], type="l", ylim = c(min(cv.errors),max(cv.errors)), 
+     ylab="MSE", xlab="num of variables")
+for (i in 2:5) {
+    points(1:p,cv.errors[i,],type="l",col=i)
+}
+legend("topright",legend = paste("fold",1:5),lty=1,col=1:5)
+```
+
++ fold 5 時計算出的 MSE 非常大，可能因為此時的 Validation set 被分割到了一些 outliers，故我們不考慮此情況，僅將剩餘四種 fold 所計算的 MSE 平均  
+
+
+```{r}
+cv.errors_mean = apply(cv.errors[-5,],2,mean) ; which.min(cv.errors_mean)
+```
+
+
+```{r}
+plot(cv.errors_mean,type="l", ylab="mean(MSE)", xlab="num of variables")
+points(18,cv.errors_mean[18],pch=16,col=2,cex=1.5)
+```
+
++ 在選取 18 個解釋變數時，平均的 MSE 最小  
+
+將所有資料合併，選取 18 個解釋變數的模型估計係數如下：
+
+```{r message=FALSE, warning=FALSE}
+best.fit_full = regsubsets(Yield~., train_data, nvmax=p, 
+                           really.big = T, method = "forward")
+round(coef(best.fit_full,18),3)
+```
+
+```{r}
+pred.cp = predict.regsubsets(best.fit_full,test_data,id=13)
+MSE.cp = mean((test_data$Yield-pred.cp)^2)
+pred.bic = predict.regsubsets(best.fit_full, test_data, id=4)
+MSE.bic = mean((test_data$Yield-pred.bic)^2)
+pred.adjr2 = predict.regsubsets(best.fit_full,test_data,id=26)
+MSE.adjr2 = mean((test_data$Yield-pred.adjr2)^2)
+pred.5cv = predict.regsubsets(best.fit_full,test_data,id=18)
+MSE.5cv = mean((test_data$Yield-pred.5cv)^2)
+```
+
+
+
+## Ridge Regression via Cross-Validation  
+利用 5-fold CV 計算 MSE 的平均，以選取 Ridge Regression 所使用的參數 $\lambda$
+
+```{r}
+set.seed(1114)
+x = as.matrix(train_data[,-1]) ; y = train_data$Yield
+cv.ridge = cv.glmnet(x,y, alpha=0, nfolds = 5)
+plot(cv.ridge)
+```
+
+mean(MSE) 最小時的 $\lambda$ 為：
+
+```{r}
+best.lam_ridge = cv.ridge$lambda.min
+best.lam_ridge
+```
+
+將全部資料合併用以配飾 Ridge Regression，且帶入前面所求得的 $\lambda$，然而因為 Ridge Regression 並沒有辦法使得變數的係數真的為零，以達到 model selection 的目的，故以下僅列出 $|\hat{\beta}_i|>0.05$ 的那些係數視為重要的解釋變數：
+
+```{r}
+full.ridge = glmnet(x,y,alpha=0)
+coef.ridge = predict(full.ridge, type="coefficients"
+                     ,s=best.lam_ridge)[1:58,]
+round(coef.ridge[abs(coef.ridge)>0.05],3)
+```
+
+```{r}
+x_test = as.matrix(test_data[,-1])
+pred.ridge = predict(full.ridge, newx = x_test,s=best.lam_ridge)
+MSE.ridge = mean((test_data$Yield-pred.ridge)^2)
+```
+
+
+
+## Lasso Regression via Cross-Validation  
+利用 5-fold CV 計算 MSE 的平均，以選取 Lasso Regression 所使用的參數 $\lambda$
+
+```{r}
+set.seed(1114)
+cv.lasso = cv.glmnet(x,y,alpha = 1, nfolds=5)
+plot(cv.lasso)
+```
+
+mean(MSE) 最小時的 $\lambda$ 為：
+
+```{r}
+best.lam_lasso = cv.lasso$lambda.min
+best.lam_lasso
+```
+
+將全部資料合併用以配飾 Lasso Regression，且帶入前面所求得的 $\lambda$，和 Ridge 不同的是，Lasso 可以使得變數的係數真的為零，以達到 model selection 的效果，故以下列出係數不為零的變數視為重要解釋變數：
+
+```{r}
+full.lasso = glmnet(x,y,alpha = 1)
+coef.lasso = predict(full.lasso, type="coefficients", 
+                     s=best.lam_lasso)[1:58,]
+round(coef.lasso[coef.lasso!=0],3)
+```
+
+
+```{r}
+pred.lasso = predict(full.lasso, newx = x_test,s=best.lam_lasso)
+MSE.lasso = mean((test_data$Yield-pred.lasso)^2)
+```
+
+
+
+
+
+## Principal Components Regression  
+對 train data 做 PCR，並利用累績解釋比例超過 80% 來選取 component 個數
+
+```{r}
+fit.pca = pcr(Yield~., data=train_data, scale=T)
+plot(cumsum(fit.pca$Xvar)/fit.pca$Xtotvar,type="l",
+     xlab = "num of comp", ylab = "cum explained propotion")
+abline(h=0.8,lty=2,col=2)
+```
+
+$\Rightarrow$ 選出 15 個 components 來做為模型的解釋變數，係數如下所示：
+
+```{r}
+round(fit.pca$coefficients[,,1:15],2)
+```
+
+
+
+```{r}
+pred.pcr = predict(fit.pca, x_test, ncomp = 15)
+MSE.pcr = mean((test_data$Yield-pred.pcr)^2)
+```
+
+
+## Performance upon test data  
+各模型對 test data 的預測表現 MSE 計算結果呈現如下
+
+```{r}
+table = data.frame(a = MSE.cp,b = MSE.bic,c = MSE.adjr2,
+                   d = MSE.5cv,e = MSE.ridge,f = MSE.lasso,g = MSE.pcr)
+rownames(table) = "MSE"
+kable(table, col.names = c("Cp","BIC","$R^2_a$","5-fold CV","Ridge","Lasso","PCR"),
+      digits = 3)
+```
+
+$\Rightarrow$ Ridge regression 在 test data 上的表現最好
+
+
+
+
+
+
+
+
+
+
+
+
+# Problem 2.  
+
+```{r}
+library(latex2exp)
+library(boot)
+data2 = read.csv("hw3_problem2.csv")
+X = data2$x
+n = dim(data2)[1]
+
+compute_sigma.hat = function(X, idx) {
+    X = X[idx]
+    sd(X)
+}
+compute_sigma.tilde = function(X, idx) {
+    X = X[idx]
+    1.4826*median(abs(X-median(X)))
+}
+```
+
+Compute estimated standard deviation for the whole data
+$$
+\begin{aligned}
+&\hat{\sigma}\ =\ \sqrt{\frac{1}{n-1}\sum_{i=1}^n\left(X_i-\bar{X}\right)^2}\ =\ 3.745385\\
+&\tilde{\sigma}\ =\ 1.4826\times med_{1\leq i\leq n}\left\{|X_i-X_{med}|\right\}\ =\ 2.585234
+\end{aligned}
+$$
+
+
+```{r}
+sigma.hat = compute_sigma.hat(X, 1:n)
+sigma.tilde = compute_sigma.tilde(X,1:n)
+c(sigma.hat,sigma.tilde)
+```
+
+And now apply bootstrap method (resample $n$ observations with replacement from the raw data) 10000 times to compute $\hat{\sigma}_b^i$ and $\tilde{\sigma}_b^i$ for $i=1,...,10000$
+
+
+```{r}
+set.seed(1108)
+sigma.hat_boots = boot(X,compute_sigma.hat,R=10000)
+sigma.tilde_boots = boot(X,compute_sigma.tilde,R=10000)
+```
+
+Construct the sampling distribution of $\hat{\sigma}$ and $\tilde{\sigma}$ by histogram
+
+```{r}
+hist(sigma.hat_boots$t[,1], probability = T, 
+     main = TeX("Sampling distribution of $\\hat{\\sigma}$"), 
+     xlab = TeX("$\\hat{\\sigma}_b$"))
+abline(v = sigma.hat, col = 2, lwd = 2)
+abline(v = quantile(sigma.hat_boots$t[,1],c(0.025,0.975)), col=4, lty=2, lwd=2)
+legend("topright", legend = c(TeX("$\\hat{\\sigma}$"),TeX("$\\hat{\\sigma}_b$ 95% CI")), 
+       lty=c(1,2),col=c(2,4),lwd=2)
+box()
+```
+
+
+```{r}
+hist(sigma.tilde_boots$t[,1], probability = T, 
+     main = TeX("Sampling distribution of $\\tilde{\\sigma}$"), 
+     xlab = TeX("$\\tilde{\\sigma}$"))
+abline(v = sigma.tilde, col=2, lwd=2)
+abline(v = quantile(sigma.tilde_boots$t[,1],c(0.025,0.975)),col=4,lwd=2,lty=2)
+legend("topright", legend = c(TeX("$\\tilde{\\sigma}$"),TeX("$\\tilde{\\sigma}_b$ 95% CI")), 
+       lty=c(1,2),col=c(2,4),lwd=2)
+box()
+```
+
+We can see that both $\hat{\sigma}$ and $\tilde{\sigma}$ are filled in the $95\%$ bootstrap confidence intervals.  
+Compute the estimation of $var\left(\hat{\sigma}\right)$ and $var\left(\tilde{\sigma}\right)$
+$$
+\begin{aligned}
+&\hat{var}\left(\hat{\sigma}\right)\ =\ \frac{1}{B-1}\sum_{i=1}^B\left(\hat{\sigma}_b^i\ -\ \bar{\hat{\sigma}}_b\right)^2\ =\ 0.13677879\\
+&\hat{var}\left(\tilde{\sigma}\right)\ =\ \frac{1}{B-1}\sum_{i=1}^B\left(\tilde{\sigma}_b^i\ -\ \bar{\tilde{\sigma}}_b\right)^2\ =\ 0.08307997
+\end{aligned}
+$$
+
+
+```{r}
+c(var(sigma.hat_boots$t[,1]),var(sigma.tilde_boots$t[,1]))
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+
+
+
+
+
+
+
