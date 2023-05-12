@@ -1,0 +1,253 @@
+---
+title: "Reliability Analysis Homework 5"
+author: "110024516 邱繼賢"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1.5}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+## Problem 1.  
+
+### (a)  
+
+```{r message=FALSE, warning=FALSE}
+library("DirichletReg")
+qsev=function(p){
+  log(qweibull(p,1,1))
+}
+psev=function(x){
+  pweibull(exp(x),1,1)
+}
+ld=function(x,mu,sig){ #log density function 
+  z=(log(x)-mu)/sig
+  (z-exp(z))-log(sig)-log(x)
+}
+lS=function(x,mu,sig){ #log survival function
+  z=(log(x)-mu)/sig
+  -exp(z)
+}
+logL=function(theta,ti,di,ri,w){
+  mu=theta[1];sig=abs(theta[2])
+  l=0
+  for(i in 1:length(ti)){
+    l=l+di[i]*w[i]*ld(ti[i],mu,sig)+(ri[i])*w[i]*lS(ti[i],mu,sig)
+  }
+  -l
+}
+```
+
+
+```{r message=FALSE, warning=FALSE}
+library(knitr)
+library(dplyr)
+bearing = read.csv("BearingCage.csv")
+data1 = bearing %>% group_by(Hours) %>% 
+    summarise(di = ifelse(Censoring.Indicator=="Failed",Count,0), 
+              ri = ifelse(Censoring.Indicator=="Censored",Count,0)) %>% 
+    ungroup()
+kable(data1, col.names = c("$t_k$","$d_k$","$r_k$"))
+```
+
+Likelihood function for $i$th bootstrap sampling
+$$
+L\left(\mu_i\ ,\ \sigma_i\ ;\ t\right)\ =\ \prod_{k=1}^{25}\left\{\left[\frac{1}{\sigma_it_k}\phi_{\text{sev}}\left(\frac{\log(t_k)-\mu_i}{\sigma_i}\right)\right]^{d_kw_k}\left[1-\Phi_{sev}\left(\frac{\log(t_k)-\mu_i}{\sigma_i}\right)\right]^{r_kw_k}\right\}
+$$
+where $w\ =\ (w_1,...,w_{25})\ \sim\ 25\times$uniform Dirichlet distribution  
+Then compute bootstrap ML estimates
+$$
+\left(\hat{\mu}^*_i\ ,\ \hat{\sigma}^*_i\right)\ =\ \arg max \{\log L\left(\mu_i\ ,\ \sigma_i\ ;\ t\right)\}
+$$
+Iterate the above steps for $i=1,...,1000$
+
+
+```{r message=FALSE, warning=FALSE}
+mu_star = sig_star = c()
+set.seed(0231)
+for (i in 1:1000) {
+    w = 25*rdirichlet(1,rep(1,25))
+    op=optim(c(8,0.2),ti=data1$Hours,di=data1$di,ri=data1$ri,w=w,logL,hessian=F)
+    mle=op$p
+    mu_star[i] = mle[1] ; sig_star[i] = abs(mle[2])
+}
+```
+
+
+```{r message=FALSE, warning=FALSE}
+library(latex2exp)
+par(mfrow = c(1,2))
+hist(mu_star, main = "", xlab = TeX("$\\hat{\\mu}^*$")) ; box()
+hist(sig_star, main = "", xlab = TeX("$\\hat{\\sigma}^*$")) ; box()
+```
+
+
+
+
+
+### (b)  
+
+$$
+\hat{t}^*_{0.1}\ =\ \exp\left[\hat{\mu}^*\ +\ \Phi_{\text{sev}}^{-1}(0.1)\ \hat{\sigma}^*\right]
+$$
+
+```{r}
+t0.1_star = exp(mu_star + qsev(0.1)*sig_star)
+hist(t0.1_star, xlab = TeX("$\\hat{t}^*_{0.1}$"), main = "") ; box()
+```
+
+
+
+### (c)   
+
+```{r}
+quantile(t0.1_star,c(0.025,0.975))
+```
+
+```{r}
+table = data.frame(a = c("Bootstrap","Wald","LR-based"), 
+                   low = c(1811.622, 160.4161, 2122.449), 
+                   upp = c(14263.024, 7641.4650,22185.714))
+kable(table,col.names = c("", "2.5%","97.5%"))
+```
+
+We can see that the interval by bootstrap is much wider than the Wald one, and relatively closed to the LR-based one.  
+
+
+
+
+
+
+## Problem 2.  
+
+### (a)  
+
+```{r}
+data2 = read.csv("CeramicBearing02.csv")
+colnames(data2) = c("time","stress")
+plot(log(data2$stress), log(data2$time), xlab = "log(Stress)", ylab = "log(Time)", cex = 1.5)
+```
+
+
+### (b)  
+
+```{r}
+plot(log(data2$stress), log(data2$time), xlab = "log(Stress)", ylab = "log(Time)", cex = 1.5)
+median = data2 %>% group_by(stress) %>% 
+    summarise(me = median(time)) %>% 
+    ungroup()
+points(log(median$stress),log(median$me), pch = 17, col = 2, cex = 1.5)
+fit = lm(log(me)~log(stress), median)
+abline(fit, col = 2, lwd = 2)
+```
+
+We can see that the log median failure times are approximately fall around a straight line, so we can try to fit $\log(t_{0.50})\ =\ \beta_0\ +\ \beta_1\log(\text{stress})$ in this case.  
+
+
+
+### (c)  
+
+```{r}
+ti = data2[,1] ; xi = data2[,2] ; di = rep(1,40)
+group=c()
+for(i in 1:length(xi)){
+  group[i]=rank(c(xi[i],unique(xi)),tie="min")[1]
+}
+```
+
+```{r}
+for(k in 1:4){
+  tj=ti[which(group==k)];dj=di[which(group==k)]
+  dj=dj[order(tj)];tj=sort(tj)
+  nj=length(tj):1
+  pj=dj/nj
+  Fj=1-Reduce("*",1-pj,acc=T)
+  tab=cbind(tj,dj,nj,1-pj,Fj)[which(dj==1),]
+  
+  y=c(0,tab[,5])
+  y=(y[-1]+y[-length(y)])/2
+  if(k==1){
+    plot(log(tab[,1]),qsev(y),xlim=log(c(0.01,38)),ylim=qsev(c(.001,.999)),cex=0.6,col=k,
+         xlab=TeX("$10^6$ revolutions"),ylab="F(t)",yaxt="n",xaxt="n",main = "Weibull plot")
+  }else{
+    points(log(tab[,1]),qsev(y),cex=0.6,pch=k,col=k,
+         yaxt="n",xaxt="n")
+  }
+  y_lab=c(.001,.003,.01,.02,.05,.1,.2,.3,.5,.7,.9,.99,.999)
+  axis(2,log(-log(1-y_lab)),y_lab,cex.axis=0.8,las=1)
+  x_lab=exp(seq(log(0.01),log(38),len=10))
+  axis(1,log(x_lab),round(x_lab,2),las=1)
+  #abline(a=-mle[2*k-1]/mle[2*k],b=1/mle[2*k],col=k)
+}
+legend("bottomright", 
+       legend = c("Stress=0.87","Stress=0.99","Stress=1.09","Stress=1.18"), 
+       col = 1:4, pch = 1:4)
+```
+
+1. 在四種 Stress 的設定值下，資料在 Weibull plot 上分布的斜率並沒有太顯著差異，與題目的假設：shape parameter $\beta=\frac{1}{\sigma}$ does not depend on stress 一致  
+2. 隨著 Stress 的數值上升，資料在 Weibull plot 上分布的 y 截距 ($-\frac{\mu}{\sigma}$) 隨之上升，也就是說 scale parameter $\mu$ 會隨著 Stress 的數值上升而變小  
+
+
+### (d)  
+Fit the model
+$$
+\log(t_{p,\text{Stress}})\ =\ \mu_{\text{Stress}}\ +\ \Phi_{\text{sev}}^{-1}(p)\ \sigma\ =\ \beta_0\ +\ \beta_1\times\log(\text{Stress})\ +\ \Phi_{\text{sev}}^{-1}(p)\ \sigma
+$$
+and estimate the parameter $(\beta_0\ ,\ \beta_1\ ,\ \sigma)$ by the ML method  
+
+```{r}
+#summary(lm(log(ti)~log(xi)))#initial 
+logL=function(theta,ti,di,xi){
+  b0=theta[1];b1=theta[2];sig=theta[3]
+  if(sig<0.001)sig=0.001
+  mu=b0+b1*xi
+  l=0
+  for(i in 1:length(ti)){
+    l=l+di[i]*ld(ti[i],mu[i],sig)+(1-di[i])*lS(ti[i],mu[i],sig)
+  }
+  -l
+}
+op=optim(c(0,2,1),ti=ti,di=di,xi=log(xi),logL,hessian=T)
+mle = op$p
+mle
+```
+
+
+Therefore, 
+$$
+\begin{aligned}
+\hat{t}_{p,\text{Stress}}\ &=\ \exp\left[\hat{\beta}_0\ +\ \hat{\beta}_1\times\log(\text{Stress})\ +\ \Phi_{\text{sev}}^{-1}(p)\ \hat{\sigma}\right]\\
+&=\ \exp\left[0.7886737\ -\ 13.8886708\times\log(\text{Stress})\ +\ \Phi_{\text{sev}}^{-1}(p)\times0.8577896\right]
+\end{aligned}
+$$
+
+
+### (e)  
+$$
+\hat{t}_{0.5,1.05}\ =\ \exp\left[\hat{\beta}_0\ +\ \hat{\beta}_1\times\log(1.05)\ +\ \Phi_{\text{sev}}^{-1}(0.5)\ \hat{\sigma}\right]
+$$
+```{r}
+exp(mle[1] + mle[2]*log(1.05) + qsev(0.5)*mle[3])
+```
+
+$$
+\hat{t}_{0.01,1.05}\ =\ \exp\left[\hat{\beta}_0\ +\ \hat{\beta}_1\times\log(1.05)\ +\ \Phi_{\text{sev}}^{-1}(0.01)\ \hat{\sigma}\right]
+$$
+```{r}
+exp(mle[1] + mle[2]*log(1.05) + qsev(0.01)*mle[3])
+```
+
+$$
+\hat{t}_{0.01,0.85}\ =\ \exp\left[\hat{\beta}_0\ +\ \hat{\beta}_1\times\log(0.85)\ +\ \Phi_{\text{sev}}^{-1}(0.01)\ \hat{\sigma}\right]
+$$
+
+```{r}
+exp(mle[1] + mle[2]*log(0.85) + qsev(0.01)*mle[3])
+```
+
+
+
+
+
