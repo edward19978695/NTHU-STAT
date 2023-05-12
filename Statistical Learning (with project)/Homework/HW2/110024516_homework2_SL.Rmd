@@ -1,0 +1,427 @@
+---
+title: "Statistical Learning Homework 2"
+author: "110024516 邱繼賢"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1.5}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+```{r message=FALSE, warning=FALSE}
+library(mlbench)
+library(corrplot)
+library(dplyr)
+library(ggplot2)
+library(GGally)
+library(caret)
+library(ROSE)
+library(MASS)
+library(class)
+library(psych)
+library(nnet)
+library(cowplot)
+```
+
+
+
+## Problem 1.  
+### EDA  
+觀察資料的數值特徵：
+
+```{r}
+data("BreastCancer")
+data1 = matrix(as.numeric(as.matrix(BreastCancer[,2:10])),699,9)
+data1 = data.frame(data1)
+colnames(data1) = colnames(BreastCancer[,2:10])
+data1$case = as.factor(ifelse(BreastCancer$Class == "malignant",1,0))
+data1 = data1[,c(10,1:9)]
+dim(data1)
+summary(data1)
+```
+
++ 699 筆觀測值，10 個變數  
++ 其中 response variable *case* 為 2-levels 的 nomial variable：*case=1* 為惡性的類別  
++ 其餘 9 個 predictor variables 皆為 ordinal variables，數值落在 1~10 之間，代表著與乳癌有關的各種細胞或腫瘤數值  
++ 9 個 predictor variables 從數值的級距上看起來，分布皆有右偏趨勢，有很大一部分的資料都落在較小的數值  
++ 變數 *Bare.nuclei* 中有 16 個 NA 值，資料有所缺失，但只占全部資料中很小的比例，在後面的分析中將此 16 筆資料全部刪除  
+
+
+```{r}
+data1 = na.omit(data1)
+dim(data1)
+```
+
+將缺失值刪除後，剩下 683 筆觀測值，接下來對資料進行圖形上的分析：
+
+
+```{r message=FALSE, warning=FALSE}
+ggpairs(data1, aes(color = data1$case, alpha= 0.5), 
+        upper = list(continuous = wrap("cor", size = 2)), 
+        lower = list(continuous = wrap("points", size=0.7)))
+```
+
++ 首先觀察 response variable *case* 對其餘變數的 side-by-side box-plots，可以發現被判定為良性 benign (*case=0* 紅色) 的病患在各項 predictor variables 的分數大多都集中在偏低的數值，和 malignant (*case=1* 藍色) 的病患分佈有明顯差距  
++ 也可以藉由對角線的 density plots 觀察到，紅色的資料幾乎都分布在較小的數值，這也是造成各 predictor variables 分布右偏的原因  
++ 再來觀察 pairwise scatter plots，發現紅色的資料點大多集中在左下角，代表著 benign 的病患在各 predictor variables 大多會同時呈現較小的數值  
++ correlation coefficient 的數值較多，不易觀察，以下直接使用 correlation plot 視覺化：
+
+
+```{r}
+corrplot(cor(data1[,-1]))
+```
+
++ 9 個 predictor variables 之間都呈現為正相關，結合前面 predictor 和 response 之間的關係，可做出以下推論：此 9 個變數數值越大，則病患越有傾向具有惡性腫瘤，且這些變數間具有一定程度的正相關，背後可能有一個 latent variable 也就是「病患的身體狀況」  
++ *Cell.size* 和 *Cell.shape* 之間的正相關程度非常大，他們代表的意義分別為：「細胞大小的對稱性」和「細胞形狀的對稱性」，在建構模型時此兩變數可能會有共線性  
+
+
+接下來，將資料以 400:283 的比例隨機分成 training set 和 testing set，並利用 training set 來建構以下各種模型，然後觀察其在 testing set 上的表現：
+
+### Logistic regression  
+
+Model :
+$$
+\begin{aligned}
+\log\left(\frac{p_\text{case}}{1-p_{\text{case}}}\right)\ =\ &\beta_0+\beta_1\ Cl.thickness+\beta_2\ Cell.size+\beta_3\ Cell.shape+\beta_4\ Marg.adhesion+\beta_5\ Epith.c.size\\
+&\beta_6\ Bare.nuclei+\beta_7\ Bl.cromatin+\beta_8\ Normal.nucleoli+\beta_9\ Mitoses
+\end{aligned}
+$$
+
+```{r}
+set.seed(10151)
+idx = sample(1:683, 400, replace = F)
+data1_train = data1[idx,] ; data1_test = data1[-idx,]
+# logistic regression
+glm.fit = glm(case ~ ., data1_train, family = binomial)
+summary(glm.fit)
+```
+
++ 變數 *Cl.thickness, Marg.adhesion, Bare.nuclei, Bl.cromatin, Normal.nucleoli, Mitoses* 皆呈現顯著  
+
+
+
+```{r}
+glm.probs <- predict(glm.fit, data1_test, type = "response")
+glm.pred = rep("benign (non-cased)", 283)
+glm.pred[glm.probs > 0.5] = "malignant (cased)"
+Direct = data1_test$case
+levels(Direct) = c("benign (non-cased)", "malignant (cased)")
+confusionMatrix(as.factor(glm.pred), Direct, positive = "malignant (cased)")
+roc.curve(Direct, glm.probs, plotit = T)
+```
+
++ 利用 confusion matrix 計算出 Accuracy = 0.9505  
++ ROC curve 表現相當好，AUC = 0.992  
+
+
+
+
+### LDA  
+
+
+
+```{r}
+# LDA
+lda.fit = lda(case ~ ., data1_train)
+lda.pred = predict(lda.fit, data1_test)
+lda.class = lda.pred$class
+levels(lda.class) = c("benign (non-cased)", "malignant (cased)")
+confusionMatrix(lda.class, Direct, positive = "malignant (cased)")
+roc.curve(Direct, lda.pred$posterior[,2], plotit = T)
+```
+
++ 利用 confusion matrix 計算出 Accuracy = 0.9611  
++ ROC curve 表現跟 logistic regression 時差不多，AUC = 0.994  
+
+
+
+### QDA  
+
+
+```{r}
+# QDA
+qda.fit = qda(case ~ ., data1_train)
+qda.pred = predict(qda.fit, data1_test)
+qda.class = qda.pred$class
+levels(qda.class) = c("benign (non-cased)", "malignant (cased)")
+confusionMatrix(qda.class, Direct, positive = "malignant (cased)")
+roc.curve(Direct, qda.pred$posterior[,2], plotit = T)
+```
+
++ 利用 confusion matrix 計算 accuracy = 0.9611  
++ ROC curve 表現也很好，AUC = 0.983  
+
+
+### KNN  
+為了避免個變數因為單位不同而對資料點間距離造成影響，故在進行 KNN 之前先將資料對各變數 standardize
+
+```{r}
+data1_std = scale(data1[,-1])
+train_X = data1_std[idx,] ; train_Y = data1[idx,1]
+test_X = data1_std[-idx,] ; test_Y = data1[-idx,1]
+```
+
+設定 k = 10 並對 testing data set 進行分類預測
+
+```{r}
+set.seed(1019)
+knn_pred = knn(train_X, test_X, train_Y, k=10, prob = T)
+levels(knn_pred) = c("benign (non-cased)", "malignant (cased)")
+confusionMatrix(knn_pred, Direct, positive = "malignant (cased)")
+knn_prob = attributes(knn_pred)$prob
+knn_prob = ifelse(knn_pred=="malignant (cased)"
+                  ,knn_prob,1-knn_prob)
+roc.curve(Direct, knn_prob, plotit = T)
+```
+
+
++ 利用 confusion matrix 計算 accuracy = 0.9682  
++ ROC curve 表現很好，AUC = 0.988
+
+
+### Comparison and Conclusion  
+
+|      | **Logistic** | **LDA** | **QDA** | **KNN** |
+|----------|-------------------------|---------|---------|---------|
+| Accuracy | 0.9505                  | 0.9611  | 0.9611   |  0.9682  |
+| AUC      | 0.992                   | 0.994   | 0.983   | 0.988   |
+
+
++ 四種模型的 Accuracy 和 AUC 的表現差異不大，都非常好，這可能是因為 EDA 中有提到：*case=0* 和 *case=1* 的兩個類別資料分布的差異非常大  
++ 我們建構的模型只是對於此筆資料的表現很好，若用來預測未來 unknown observations 不見得還能有如此高的準確度  
++ 以上預測皆是在 Threshold = 0.5 的情況下做預測，解決實際問題時應考慮 False positive 和 False negative 時所需付出的成本差異來調整 Threshold  
+
+
+
+
+## Problem 2.  
+### EDA  
+觀察資料的各項數值特徵  
+
+```{r}
+data(Glass)
+data2 = Glass
+dim(data2)
+summary(data2)
+```
+
++ 214 筆觀測值，10 個變數  
++ 其中 response variable *Type* 為類別型變數，共 7 個 levels，代表七種不同類型的玻璃，但此筆資料中並未出現 *Type*=4 的種類，大部分的資料都是 *Type*=1,2,7 這三種類別  
++ 其餘 9 個變數皆為 predictor variables，*RI*(refractive index) 為折射率，其他 8 個變數則代表玻璃中該金屬元素的含量  
++ 變數 *Ba, Fe* 有超過一半的資料點數值為零  
+
+
+
+觀察 9 個 predictor variables 的 histogram  
+
+```{r}
+par(mfrow = c(3,3))
+for (i in 1:9) {
+  hist(data2[,i], xlab = "", main = names(data2)[i])
+}
+```
+
++ *Mg* 有著明顯的雙峰分布，可能代表著不同的玻璃類別  
++ *Ba, Fe* 大部分的資料點都為零，分布呈現明顯右偏  
+
+觀察變數間的 pairwise scatter plot  
+
+
+```{r}
+pairs(data2[,-10], col=data2[,10], pch="+")
+```
+
++ 變數 *RI* 和 *Ca* 之間具有明顯的正向線性相關，可以推論出 *Ca* 元素的多寡可能會線性的影響折射率的大小  
++ 變數 *Ba*>0 的資料點大多為粉色 (*Type*=7) 的資料  
++ 其餘變數看不出太明顯的關係  
+
+
+將 *Ba* 和 *Mg* 的 histogram 根據不同的 *Type* 作圖
+
+
+```{r message=FALSE, warning=FALSE}
+p1 = ggplot(data2, aes(Ba, fill = Type)) + 
+  geom_histogram()
+p2 = ggplot(data2, aes(Mg, fill = Type)) + 
+  geom_histogram()
+plot_grid(p1,p2)
+```
+
++ 除了 *Type*=7 的類別其對應到的 *Ba* 為正，其餘類別大多 *Ba*=0，故玻璃內是否含有 *Ba* 元素可能為分辨是否為 *Type*=7 的重要變數  
++ *Type*=7 類別對應到的 *Mg* 大多為零，而 *Type*=1 則大多介於 3~4 之間較大的數值，故玻璃內是否含有 *Mg* 元素可能為區分 *Type*=1 or 7 的重要變數   
+
+
+觀察 9 個 predictor variables 之間的 correlation plot
+
+
+```{r}
+corrplot(cor(Glass[,-10]))
+```
+
++ *RI* 和 *Ca* 呈現高度正相關，這與前面 pairwise scatter plot 所做出的結論一致  
++ *RI* 和 *Si* 呈現中度負相關，可推測玻璃內 *Si* 元素的增加會降低其折射率  
+
+
+
+將資料以 150:64 的比例隨機分配成 training data 和 testing data，並在 training data 上用以下各種分類方式建構模型，然後對 testing data 進行預測  
+
+### Multiclass logistic regression (multinomial regression)  
+
+Model : 
+$$
+\begin{aligned}
+P\left(Type=k\right)\ =\ \frac{\exp(X\beta_k)}{\sum_{l=1}^7\exp(X\beta_l)}\ ,\ k=1,...,7
+\end{aligned}
+$$
+where $X$ is the model matrix and $\beta_l$ is a vector with length = 10
+
+```{r}
+set.seed(1020)
+idx = sample(1:214, 150)
+data2_train = data2[idx,]
+data2_test = data2[-idx,]
+Direct = data2_test$Type
+fit_mul = multinom(Type ~ ., data = data2_train)
+pred.prob_mul = predict(fit_mul, data2_test, type = "probs")
+pred.class_mul = predict(fit_mul, data2_test, type = "class")
+```
+
+
+
+```{r}
+table(pred.class_mul, Direct)
+mean(pred.class_mul == Direct)
+```
+
++ Accuracy = 0.5781
+
+
+### LDA  
+
+```{r}
+fit_lda = lda(Type ~ ., data = data2_train)
+pred.class_lda = predict(fit_lda, data2_test)$class
+table(pred.class_lda, Direct)
+mean(pred.class_lda == Direct)
+```
+
++ Accuracy = 0.6719 明顯高於 multinomial regression  
+
+
+### KNN  
+先對各 predictor variables 做 standardize 然後選定 k=3 進行 KNN 預測  
+
+```{r}
+data2_std = scale(data2[,-10])
+train_X = data2_std[idx,] ; train_Y = data2[idx,10]
+test_X = data2_std[-idx,]
+set.seed(1020)
+pred.class_knn = knn(train_X, test_X, train_Y, k = 3)
+table(pred.class_knn, Direct)
+mean(pred.class_knn == Direct)
+```
+
++ Accuracy = 0.7656 明顯又高於 LDA  
+
+
+
+
+### Comparison and Conclusion  
+
+
+|          | **Multinomial** | **LDA** | **KNN** |
+|----------|-----------------|---------|---------|
+| Accuracy | 0.5781          | 0.6719  | 0.7656  |
+
++ KNN 的表現最好，而 Multinomial regression 分類表現最差  
++ 以上的分類結果皆是考慮各類別的預測機率最大者則分為該類，並未考慮各類別分類錯誤時可能有著不同的成本  
++ 此筆資料數總共僅只有 214 筆，且有部分類別的個數相當少，在此情況下所分割出的 training data 和 testing data 可能無法代表整個母體  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
