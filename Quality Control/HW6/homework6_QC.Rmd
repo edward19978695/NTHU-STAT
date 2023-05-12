@@ -1,0 +1,104 @@
+---
+title: "品質管制 Homework 6"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+    number_sections: true
+author: "110024516 統研碩一 邱繼賢"
+date: "2021 年 11 月 5 日"
+fontsize: 14pt
+---
+
+\textbf{4.11}  
+給定變數 $(k,\ h)\ =\ (0.5,\ 3.08)$，並定義函數 $compute\_arl$ 用以計算 $ARL$ 值，如下：$$ARL\ \approx\ \frac{exp(2k(h+1.166))-2k(h+1.166)-1}{2k^2}$$
+再定義函數 $compute\_arl\_star$，用兩個 one-sided CUSUM chart 計算出 two-sided CUSUM chart 的 $ARL$ 值，如下$$ARL^{\star}\ =\ (\frac{1}{ARL^+}\ +\ \frac{1}{ARL^-})^{-1}$$
+```{r}
+k = 0.5
+h = 3.08
+
+compute_arl = function(k, h) {
+  return((exp(2*k*(h+1.166))-2*k*(h+1.166)-1)/(2*k^2))
+}
+
+compute_arl_star = function(arl_plus, arl_minus) {
+  return((1/arl_plus+1/arl_minus)^(-1))
+}
+```
+\textbf{(i)}  
+
+```{r}
+arl_plus1 = compute_arl(k, h)
+arl_minus1 = compute_arl(k, h)
+
+arl_star = compute_arl_star(arl_plus1, arl_minus1)
+c(arl_plus1, arl_minus1, arl_star)
+```
+$$
+\begin{aligned}
+&\Rightarrow\ ARL_0^+\ =\ ARL_0^-\ =\ 129.15910\\
+&\therefore\ ARL_0^{\star}\ =\ (\frac{1}{ARL_0^+}\ +\ \frac{1}{ARL_0^-})^{-1}=\ 64.57955
+\end{aligned}
+$$
+
+\textbf{(ii)}  
+
+
+```{r}
+delta2 = 1.2
+arl_plus2 = compute_arl(k-delta2, 3.08)
+arl_minus2 = compute_arl(k+delta2, 3.08)
+arl_star2 = compute_arl_star(arl_plus2, arl_minus2)
+c(arl_plus2, arl_minus2, arl_star2)
+```
+$$
+\begin{aligned}
+&To\ calculate\ ARL_1^+\ ,\ k^*\ =\ k-\delta\ =-0.7\ ,\ h^*\ =\ h\ =\ 3.08\\&and\ then\ take\ (k^*,h^*)\ into\ function\ compute\_arl\ \\&\Rightarrow\ ARL_1^+\ =\ 5.04798\\
+&To\ calculate\ ARL_1^-\ ,\ k^*\ =\ k-(-\delta)\ =\ 1.7\ ,\ h^*\ =\ h\ =\ 3.08\\&and\ then\ take\ (k^*,h^*)\ into\ function\ compute\_arl\ \\&\Rightarrow\ ARL_1^-\ =\ 3.219\times10^5\\
+&\therefore\ ARL_1^*\ =\ (\frac{1}{ARL_1^+}\ +\ \frac{1}{ARL_1^-})^{-1}\ =\ 5.047901
+\end{aligned}
+$$
+
+
+
+\textbf{(iii)}  
+
+```{r}
+delta3 = -1.2
+arl_plus3 = compute_arl(k-delta3, 3.08)
+arl_minus3 = compute_arl(k+delta3, 3.08)
+arl_star3 = compute_arl_star(arl_plus3, arl_minus3)
+c(arl_plus3, arl_minus3, arl_star3)
+```
+$$
+\begin{aligned}
+&To\ calculate\ ARL_1^+\ ,\ k^*\ =\ k-\delta\ =\ 1.7\ ,\ h^*\ =\ h\ =\ 3.08\\&and\ then\ take\ (k^*,h^*)\ into\ function\ compute\_arl\ \\&\Rightarrow\ ARL_1^+\ =\ 3.219\times10^5\\
+&To\ calculate\ ARL_1^-\ ,\ k^*\ =\ k-(-\delta)\ =\ -0.7\ ,\ h^*\ =\ h\ =\ 3.08\\&and\ then\ take\ (k^*,h^*)\ into\ function\ compute\_arl\ \\&\Rightarrow\ ARL_1^-\ =\ 5.04798\\
+&\therefore\ ARL_1^*\ =\ (\frac{1}{ARL_1^+}\ +\ \frac{1}{ARL_1^-})^{-1}\ =\ 5.047901
+\end{aligned}
+$$
+\textbf{(iv)}  
+(ii)和(iii)兩小題的$ARL_1^+$及$ARL_1^-$數值為互相交換，因為計算$mean\ shift\ \delta=1.2$的$ARL_1^+$，同等於計算$mean\ shift\ \delta=-1.2$的$ARL_1^-$，反之亦然。
+
+因為兩小題的$ARL_1^+$和$ARL_1^-$僅為數值互換，所以計算出的$ARL_1^*$會完全相同。
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
