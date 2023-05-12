@@ -1,0 +1,178 @@
+---
+title: "Discrete Analysis Homework 4"
+author: "110024516 邱繼賢"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1.5}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+## Problem 1.  
+
+```{r}
+data(discoveries)
+plot(discoveries, ylab = "Number of important discoveries",
+     las = 1)
+title(main = "discoveries data set")
+```
+
+
+We can see that the **numbers** of great inventions and scientific discoveries in each year from 1860 to 1959 does not look like a constant over time. However, we do not know the **total numbers** of inventions and scientific discoveries in each year, namely *size variable*. We can not infer that the higher number of great discoveries means the higher discovery rate. We need more information.  
+
+If we believe that the **total numbers** of discoveries in each year are almost equal (or regard **one year** as size variable), then we can compare the discovery rate by comparing the great discovery numbers. Let's construct the Poisson GLM.
+$$
+\begin{aligned}
+&y_i\ \sim\ Poi(\mu_i)\\
+&\log(\mu_i)\ =\ \eta_i\ =\ \beta_0\ +\ \beta_1\ \text{Year}
+\end{aligned}
+$$
+
+
+```{r}
+year = 1860:1959
+modp = glm(discoveries ~ year, family = poisson)
+summary(modp)
+```
+
+Although the model does not fit well enough (look at the Residual deviance), we can still observe that the variable *Year* significantly involves the response. The great discovery numbers (rate) hasn't remained constant over time.  
+
+
+
+
+
+
+## Problem 2.  
+First, fit the Poisson GLM
+$$
+\begin{aligned}
+&y_i\ \sim\ Poi(\mu_i)\\
+&\log(\mu_i)\ =\ \eta_i\ =\ \beta_0\ +\ \beta_1\ \text{dose}
+\end{aligned}
+$$
+
+```{r}
+salmon = read.table("salmonella.txt")
+mod2.1 = glm(colonies ~ dose, family = poisson, salmon)
+summary(mod2.1)
+```
+
+We can see that the Residual deviance is really large, and the goodness-of-fit test is rejected (p-value $=\ P(\chi^2_{16}\ >\ 75.806)\ < 0.05$).  
+
+The reasons of this situation may be  
+
+1. Wrong $X\beta$ structure  
+2. Outliers  
+3. Over-dispersion  
+
+Let's try the complicated model by adding the quadratic and cubic terms of dose
+$$
+\begin{aligned}
+&y_i\ \sim\ Poi(\mu_i)\\
+&\log(\mu_i)\ =\ \eta_i\ =\ \beta_0\ +\ \beta_1\ \text{dose} + \beta_2\ \text{dose}^2\ +\ \beta_3\ \text{dose}^3
+\end{aligned}
+$$
+
+
+```{r}
+mod2.2 = update(mod2.1, .~.+I(dose^2)+I(dose^3))
+summary(mod2.2)
+```
+
+The Residual deviance became smaller slightly but the goodness-of-fit test is still rejected (p-value $=\ P(\chi^2_{14}\ >\ 36.055)\ <\ 0.05$).  
+We can add more explanatory terms in the model to reduce the deviance, but the model will become very hard to explain. Let's check whether the large deviance is caused by outliers.  
+
+```{r}
+"halfnorm" <- function (x, nlab = 2, labs = as.character(1:length(x)), ylab = "Sorted Data") {
+    x <- abs(x)
+    labord <- order(x)
+    x <- sort(x)
+    i <- order(x)
+    n <- length(x)
+    ui <- qnorm((n + 1:n)/(2 * n + 1))
+    plot(ui, x[i], xlab = "Half-normal quantiles", ylab = ylab, ylim=c(0,max(x)),
+         type = "n")
+    if(nlab < n)
+        points(ui[1:(n - nlab)], x[i][1:(n - nlab)])
+    text(ui[(n - nlab + 1):n], x[i][(n - nlab + 1):n], labs[labord][(n - nlab + 1):n])
+}
+halfnorm(residuals(mod2.2))
+```
+
+We do not see any clear evidence of outlier in the half-normal plot.  
+
+The only reason left is the over-dispersion. We can solve this situation by  
+
+1. Adding a dispersion parameter $\sigma^2$  
+2. Refitting the model as a Negative Binomial GLM  
+
+
+
+
+
+
+
+
+
+
+## Problem 3.  
+Regard *Age* as numerical variable and construct Poisson GLM (rate model)
+$$
+\begin{aligned}
+&y_i\ \sim\ Poi(\mu_i)\\
+&\log(\mu_i)\ =\ \eta'_i\ =\ \log(Total)\ +\ \eta_i\ \sim\ \text{offset}(Total)\ +\ \text{unclass}(Age)\ *\ Status
+\end{aligned}
+$$
+
+```{r}
+marital = read.table("maritaldane.txt")
+data = cbind(stack(marital[,c(2,3,4)]),rep(as.factor(marital$Age),3),rep(marital$Total,3))
+colnames(data) = c("count","Status","Age","Total")
+mod3.1 = glm(count ~ offset(log(Total)) + Status*unclass(Age), family = poisson, data)
+summary(mod3.1)
+```
+
+隨著變數 *Age* 每上升一個階級  
+
+1. *Status = single* 所佔的比例變為原本的 $e^{-0.42301}\ =\ 0.6550721$ 倍  
+2. *Status = married* 所佔的比例變為原本的 $e^{-0.42301+0.50940}\ =\ 1.090231$ 倍  
+3. *Status = divorced* 所佔的比例變為原本的 $e^{-0.42301+0.92728}\ =\ 1.655776$ 倍  
+
+Predict the probability of  
+$(Age\ ,\ Status)\ =\ (55\ ,\ \text{divorced})\ \Rightarrow\ (\text{unclass}(Age)\ ,\ Status)\ =\ (6\ ,\ \text{divorced})\ \Rightarrow\ x_0\ =\ (1,0,1,6,0,6)^T$
+$$
+\begin{aligned}
+&\log(\hat{p}_{x_0})\ =\ \log\left(\frac{\hat{\mu}_{x_0}}{28}\right)\ =\ \hat{\eta}_{x_0}\ =\ x_0^T\hat{\beta}\ =\ -1.390718\\
+\Rightarrow\ &\hat{p}_{x_0}\ =\ \exp\left(\hat{\eta}_{x_0}\right)\ =\ 0.2488965
+\end{aligned}
+$$
+
+```{r}
+x0 = c(1,0,1,6,0,6)
+eta = sum(mod3.1$coefficients*x0)
+mu = exp(eta)
+mu
+```
+
+The $95\%$ confidence interval of $\hat{p}_{x_0}$
+$$
+\left[\exp\left(\hat{\eta}_{x_0}-Z_{0.975}\ \text{se}\left(\hat{\eta}_{x_0}\right)\right)\ ,\ \exp\left(\hat{\eta}_{x_0}+Z_{0.975}\ \text{se}\left(\hat{\eta}_{x_0}\right)\right)\right]\ =\ \left[0.1740123\ ,\ 0.3560064\right]
+$$
+where
+$$
+\text{se}\left(\hat{\eta}_{x_0}\right)\ =\ \sqrt{x_0^T\ \hat{\Sigma}\ x_0}
+$$
+
+```{r}
+mod3.1_sum = summary(mod3.1)
+cm = mod3.1_sum$cov.unscaled
+se = sqrt(t(x0) %*% cm %*% x0)[1,1]
+exp(eta+c(-1,1)*qnorm(0.975)*se)
+```
+
+
+
+
+
