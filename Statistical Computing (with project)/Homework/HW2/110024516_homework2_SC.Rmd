@@ -1,0 +1,650 @@
+---
+title: "Statistical Computing Homework 2"
+author: "110024516 邱繼賢"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1.5}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+# Problem 1.
+## $\underline{\eta\ =\ (1,0.5)}$  
+使用 positive t(df=1) distribution 做為 *proposal pdf q(x)*，然後用 MH method 來抽選出樣本。  
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(latex2exp)
+weibull = function(x,theta,beta) {
+    beta/theta*(x/theta)^(beta-1)*exp(-(x/theta)^beta)
+}
+par(mfrow = c(1,2))
+curve(weibull(x,1,0.5),0,10, lwd = 2, ylab = "density", main = "pdf")
+curve(2*dt(x,1),0,10, lwd = 2, col = 2, add = T)
+legend("topright", legend = c("Wei(1,0.5)",TeX("2$\\times$t(1)")), col = c(1,2), lwd = 2)
+
+curve(weibull(x,1,0.5),20,40, lwd = 2, ylab = "density", main = "pdf")
+curve(2*dt(x,1),20,40, lwd = 2, col = 2, add = T)
+legend("topright", legend = c("We(1,0.5)",TeX("2$\\times$t(1)")), col = c(1,2), lwd = 2)
+```
+
++ target pdf *f(x)* 和 proposal pdf *q(x)* 有著相同的 support  
++ *q(x)* 的尾巴分佈比 *f(x)* 要來得厚
+ 
+*sampling scheme :*  
+(i) 選定起始點$x^{(1)}\ =\ 2$ 滿足 $f(x^{(1)})\ >\ 0$  
+(ii) For $t\ =\ 2,3,...,50000$  
+
++ draw $x^*$ from proposal q(x)  
++ compute the ratio : $r\ =\ \frac{f(x^*)q(x^{(t-1)})}{f(x^{(t-1)})q(x^*)}$  
++ set 
+$$
+x\ =\ 
+\left\{
+\begin{aligned}
+&x^*\ \ \ \ \ \ \ \ ,\ \ \text{with probability }\ min\{1,r\}\\
+&x^{(t-1)}\ \ \ ,\ \ \text{otherwise}
+\end{aligned}
+\right.
+$$
+
+使用 ACF 來檢查抽出的 50000 個樣本 $\{x^{(1)},x^{(2)},...,x^{(50000)}\}$ 之間的相關性：
+
+```{r echo=FALSE}
+set.seed(0411)
+n = 50000
+x = c()
+x[1] = 2
+for (i in 2:n) {
+    x[i] = abs(rt(1,1))
+    r = weibull(x[i],1,0.5)/weibull(x[i-1],1,0.5)*2*dt(x[i-1],1)/(2*dt(x[i],1))
+    succ = rbinom(1,1,min(1,r))
+    if (succ == 0) x[i] = x[i-1]
+}
+acf(x)
+```
+
+```{r}
+x2 = c()
+x2[1] = 3
+for (i in 2:n) {
+    x2[i] = abs(rt(1,1))
+    r = weibull(x2[i],1,0.5)/weibull(x2[i-1],1,0.5)*2*dt(x2[i-1],1)/(2*dt(x2[i],1))
+    succ = rbinom(1,1,min(1,r))
+    if (succ == 0) x2[i] = x2[i-1]
+}
+acf(x2)
+```
+
+
+```{r}
+library(coda)
+mc.12 = mcmc.list(mcmc(x), mcmc(x2))
+gelman.plot(mc.12)
+```
+
+
++ 大概在間距 10 個樣本後，相關性就非常小，接近零了  
+
+在這 50000 筆樣本中，每 10 個就抽出一個做為新的獨立樣本，最後剩下 5000 筆樣本，一樣用 ACF 來檢查相關性：
+
+```{r echo=FALSE}
+x.indep = x[10*(1:floor(n/10))]
+
+acf(x.indep)
+```
+
+可以看出樣本之間幾乎沒有相關性了，然後使用這 5000 筆樣本來跟 target pdf *f(x)* 做比較：
+
+```{r echo=FALSE}
+hist(x.indep, 100, prob = T, xlim = c(0,20), main = "target / empirical pdf", xlab = "x")
+curve(weibull(x,1,0.5), 0,20,lwd = 2, col = 4, add = T)
+legend("topright", legend = "Wei(1,0.5)", col = 4, lwd = 2)
+box()
+```
+
+可以看出模擬出的樣本和真實的 pdf 分佈相當一致，接下來以此 5000 筆樣本 $\left\{x^{(1)},x^{(2)},...,x^{(5000)}\right\}$ 來計算以下數題：  
+
+(a) Use Monte Carlo method to estimate $(E(X), Var(X))$ by $(\hat{\mu},\hat{\sigma}^2)$
+$$
+\left\{
+\begin{aligned}
+&\hat{\mu}\ =\ \frac{1}{5000}\sum\limits_{i=1}^{5000}x^{(i)}\ =\ 1.924\\
+&\hat{\sigma}^2\ =\ \frac{1}{5000-1}\sum\limits_{i=1}^{5000}\left[x^{(i)}-\hat{\mu}\right]^2\ =\ 19.486
+\end{aligned}
+\right.
+$$
+estimate kurtosis $E\left(\frac{X-EX}{\sqrt{VarX}}\right)^4$ by
+$$
+\widetilde{k}\ =\ \frac{1}{5000}\sum\limits_{i=1}^{5000}\left[\frac{x^{(i)}-\hat{\mu}}{\hat{\sigma}}\right]^4\ =\ \frac{1}{5000}\sum\limits_{i=1}^{5000}k_i\ =\ 82.979
+$$
+and compute the standard error of the estimation by
+$$
+\sqrt{\hat{Var}(\widetilde{k})}\ =\ \sqrt{\frac{1}{5000\times4999}\sum\limits_{i=1}^{5000}\left[k_i\ -\ \widetilde{k}\right]^2}\ =\ 33.631
+$$
+
+
+```{r echo=FALSE}
+library(knitr)
+mu_hat = mean(x.indep)
+sigma_hat = sd(x.indep)
+kurtosis = function(x) {
+    ((x-mu_hat)/sigma_hat)^4
+}
+k = kurtosis(x.indep)
+kable(data.frame(a=mu_hat, b=sigma_hat^2, c=mean(k), d=sd(k)/sqrt(5000)), digit = 3, 
+      col.names = c("$\\hat{\\mu}$", "$\\hat{\\sigma}^2$","$\\widetilde{k}$","$s.e.(\\widetilde{k})$"))
+```
+
+
+
+
+
+
+(b) Fisher information matrix :  
+$$
+\begin{aligned}
+I(\eta=(1,0.5))\ &=\ 
+-E\begin{bmatrix}
+\frac{\partial^2}{\partial\theta^2}logf(X)&\frac{\partial^2}{\partial\theta\partial\beta}logf(X)\\
+\frac{\partial^2}{\partial\beta\partial\theta}logf(X)&\frac{\partial^2}{\partial\beta^2}logf(X)
+\end{bmatrix}_{(1,0.5)}\\
+&=\ 
+-E\begin{bmatrix}
+\frac{\beta}{\theta^2}-\frac{\beta(\beta+1)}{\theta^2}\left(\frac{x}{\theta}\right)^\beta&\frac{-1}{\theta}+\frac{1}{\theta}\left(\frac{x}{\theta}\right)^\beta+\frac{\beta}{\theta}\left(\frac{x}{\theta}\right)^\beta\left(logx-log\theta\right)\\
+\frac{-1}{\theta}+\frac{1}{\theta}\left(\frac{x}{\theta}\right)^\beta+\frac{\beta}{\theta}\left(\frac{x}{\theta}\right)^\beta\left(logx-log\theta\right)&\frac{-1}{\beta^2}-\left(logx-log\theta\right)^2\left(\frac{x}{\theta}\right)^\beta
+\end{bmatrix}_{(1,0.5)}\\
+&=\ E\begin{bmatrix}
+\frac{3}{4}x^{\frac{1}{2}}-\frac{1}{2}&1-\left(1+\frac{1}{2}logx\right)x^{\frac{1}{2}}\\
+1-\left(1+\frac{1}{2}logx\right)x^{\frac{1}{2}}&4+\left(logx\right)^2x^{\frac{1}{2}}
+\end{bmatrix}
+\end{aligned}
+$$
+which can estimated by
+$$
+\begin{aligned}
+\hat{I}(\eta=(1,0.5))\ =\ \frac{1}{5000}
+\begin{bmatrix}
+\sum\limits_{i=1}^{5000}\left(\frac{3}{4}x^{(i)\frac{1}{2}}-\frac{1}{2}\right)&\sum\limits_{i=1}^{5000}\left(1-\left(1+\frac{1}{2}logx^{(i)}\right)x^{(i)\frac{1}{2}}\right)\\
+\sum\limits_{i=1}^{5000}\left(1-\left(1+\frac{1}{2}logx^{(i)}\right)x^{(i)\frac{1}{2}}\right)&\sum\limits_{i=1}^{5000}\left(4+\left(logx^{(i)}\right)^2x^{(i)\frac{1}{2}}\right)
+\end{bmatrix}\ =\ \begin{bmatrix}
+0.228&-0.368\\
+-0.368&7.211
+\end{bmatrix}
+\end{aligned}
+$$
+and its standard error
+$$
+s.e.(\hat{I})\ =\ \begin{bmatrix}
+\hat{Var}\left(\hat{I}_{11}\right)&\hat{Var}\left(\hat{I}_{12}\right)\\
+\hat{Var}\left(\hat{I}_{21}\right)&\hat{Var}\left(\hat{I}_{22}\right)
+\end{bmatrix}\ =\ \begin{bmatrix}
+0.0105&0.0345\\
+0.0345&0.1226
+\end{bmatrix}
+$$
+```{r include=FALSE}
+info.11 = function(x) {
+    3/4*x^0.5-0.5
+}
+
+info.12 = function(x) {
+    1-(1+0.5*log(x))*x^0.5
+}
+
+info.22 = function(x) {
+    4+log(x)^2*x^0.5
+}
+
+I_11 = info.11(x.indep)
+I_12 = info.12(x.indep)
+I_22 = info.22(x.indep)
+mean(I_11)
+mean(I_12)
+mean(I_22)
+
+sd(I_11)/sqrt(5000)
+sd(I_12)/sqrt(5000)
+sd(I_22)/sqrt(5000)
+```
+
+
+
+
+
+(c)  
+$$
+\begin{aligned}
+I(\eta=(1,0.5))\ &=\ E\begin{bmatrix}
+\frac{3}{4}x^{\frac{1}{2}}-\frac{1}{2}&1-\left(1+\frac{1}{2}logx\right)x^{\frac{1}{2}}\\
+1-\left(1+\frac{1}{2}logx\right)x^{\frac{1}{2}}&4+\left(logx\right)^2x^{\frac{1}{2}}
+\end{bmatrix}\\
+\ &=\ \begin{bmatrix}
+\int_0^\infty\left(\frac{3}{4}x^{\frac{1}{2}}-\frac{1}{2}\right)f(x)dx&\int_0^\infty\left(1-\left(1+\frac{1}{2}logx\right)x^{\frac{1}{2}}\right)f(x)dx\\
+\int_0^\infty\left(1-\left(1+\frac{1}{2}logx\right)x^{\frac{1}{2}}\right)f(x)dx&\int_0^\infty\left(4+\left(logx\right)^2x^{\frac{1}{2}}\right)f(x)dx
+\end{bmatrix}\\
+&=\ \begin{bmatrix}
+0.25&-0.423\\
+-0.423&7.295
+\end{bmatrix}
+\end{aligned}
+$$
+
+
+
+```{r include=FALSE}
+library(cubature)
+
+int_11 = function(x) {
+    (3/4*x^0.5-0.5)*weibull(x,1,0.5)
+}
+
+int_12 = function(x) {
+    (1-(1+0.5*log(x))*x^0.5)*weibull(x,1,0.5)
+}
+
+int_22 = function(x) {
+    (4+log(x)^2*x^0.5)*weibull(x,1,0.5)
+}
+```
+
+
+```{r}
+cuhre(int_11, lower=0, upper = 1000)$int
+cuhre(int_12, lower=0, upper = 1000)$int
+cuhre(int_22, lower=0, upper = 1000)$int
+```
+
+
+
+
+(d) Draw the samples $w^{(1)},w^{(2)},...,w^{(100)}\ \overset{iid}{\sim}\ Wei(\theta=1,\beta=0.5)$, and compute the empirical Fisher information  
+$$
+\begin{aligned}
+\hat{I}(\eta=(1,0.5))\ =\ \frac{1}{100}
+\begin{bmatrix}
+\sum\limits_{i=1}^{100}\left(\frac{3}{4}w^{(i)\frac{1}{2}}-\frac{1}{2}\right)&\sum\limits_{i=1}^{100}\left(1-\left(1+\frac{1}{2}logw^{(i)}\right)w^{(i)\frac{1}{2}}\right)\\
+\sum\limits_{i=1}^{100}\left(1-\left(1+\frac{1}{2}logw^{(i)}\right)w^{(i)\frac{1}{2}}\right)&\sum\limits_{i=1}^{100}\left(4+\left(logw^{(i)}\right)^2w^{(i)\frac{1}{2}}\right)
+\end{bmatrix}\ =\ \begin{bmatrix}
+0.265&-0.505\\
+-0.505&8.222
+\end{bmatrix}
+\end{aligned}
+$$
+its standard error
+$$
+s.e.(\hat{I})\ =\ \begin{bmatrix}
+\hat{Var}\left(\hat{I}_{11}\right)&\hat{Var}\left(\hat{I}_{12}\right)\\
+\hat{Var}\left(\hat{I}_{21}\right)&\hat{Var}\left(\hat{I}_{22}\right)
+\end{bmatrix}\ =\ \begin{bmatrix}
+0.086&0.316\\
+0.316&1.382
+\end{bmatrix}
+$$
+可以發現，雖然$w^{(i)}$是直接從 Weibull distribution 中所抽出的樣本，但是他所計算出估計值的 standard error 和 bias 並沒有比起我們使用 MH method 所抽出的樣本計算出的來得小，其中最可能的原因是因為$w^{(i)}$的樣本數比較小，只有 100 個，不像我們使用 MH method 時抽出了 5000 個樣本，由於 WLLN 和 CLT 的性質，使得 MH method 所計算出估計值的 standard error 和 bias 較為收斂。
+
+
+
+```{r include=FALSE}
+w = rweibull(100,0.5,1)
+info_w.11 = info.11(w)
+info_w.12 = info.12(w)
+info_w.22 = info.22(w)
+c(mean(info_w.11), sd(info_w.11)/sqrt(100))
+c(mean(info_w.12), sd(info_w.12/sqrt(100)))
+c(mean(info_w.22), sd(info_w.22)/sqrt(100))
+```
+
+
+
+
+
+
+## $\underline{\eta\ =\ (1,2)}$  
+使用 positive t(df=1) distribution 做為 *proposal pdf q(x)*，然後用 MH method 來抽選出樣本。
+
+```{r echo=FALSE}
+par(mfrow = c(1,1))
+curve(weibull(x,1,2),0,10, lwd = 2, ylab = "density", main = "pdf")
+curve(2*dt(x,1),0,10, lwd = 2, col = 2, add = T)
+legend("topright", legend = c("Wei(1,2)",TeX("2$\\times$t(1)")), col = c(1,2), lwd = 2)
+```
+
++ target pdf *f(x)* 和 proposal pdf *q(x)* 有著相同的 support  
++ *q(x)* 的尾巴分佈比 *f(x)* 要來得厚
+
+*sampling scheme :*  
+(i) 選定起始點$x^{(1)}\ =\ 1$ 滿足 $f(x^{(1)})\ >\ 0$  
+(ii) For $t\ =\ 2,3,...,50000$  
+
++ draw $x^*$ from proposal q(x)  
++ compute the ratio : $r\ =\ \frac{f(x^*)q(x^{(t-1)})}{f(x^{(t-1)})q(x^*)}$  
++ set 
+$$
+x\ =\ 
+\left\{
+\begin{aligned}
+&x^*\ \ \ \ \ \ \ \ ,\ \ \text{with probability }\ min\{1,r\}\\
+&x^{(t-1)}\ \ \ ,\ \ \text{otherwise}
+\end{aligned}
+\right.
+$$
+
+使用 ACF 來檢查抽出的 50000 個樣本 $\{x^{(1)},x^{(2)},...,x^{(50000)}\}$ 之間的相關性：
+
+```{r echo=FALSE}
+set.seed(0918)
+n = 50000
+x = c()
+x[1] = 1
+for (i in 2:n) {
+    x[i] = abs(rt(1,1))
+    r = weibull(x[i],1,2)/weibull(x[i-1],1,2)*2*dt(x[i-1],1)/(2*dt(x[i],1))
+    succ = rbinom(1,1,min(1,r))
+    if (succ == 0) x[i] = x[i-1]
+}
+acf(x)
+```
+
++ 大概在間距 10 個樣本後，相關性就非常小，接近零了  
+
+在這 50000 筆樣本中，每 10 個就抽出一個做為新的獨立樣本，最後剩下 5000 筆樣本，一樣用 ACF 來檢查相關性：
+
+```{r echo=FALSE}
+x.indep = x[10*(1:floor(n/10))]
+
+acf(x.indep)
+```
+
+可以看出樣本之間幾乎沒有相關性了，然後使用這 5000 筆樣本來跟 target pdf *f(x)* 做比較：
+
+```{r echo=FALSE}
+hist(x.indep, prob = T, xlim = c(0,6), main = "target / empirical pdf", xlab = "x")
+curve(weibull(x,1,2), 0,6,lwd = 2, col = 4, add = T)
+legend("topright", legend = "Wei(1,2)", col = 4, lwd = 2)
+box()
+```
+
+可以看出模擬出的樣本和真實的 pdf 分佈相當一致，接下來以此 5000 筆樣本 $\left\{x^{(1)},x^{(2)},...,x^{(5000)}\right\}$ 來計算以下數題：  
+
+(a) Use Monte Carlo method to estimate $(E(X), Var(X))$ by $(\hat{\mu},\hat{\sigma}^2)$
+$$
+\left\{
+\begin{aligned}
+&\hat{\mu}\ =\ \frac{1}{5000}\sum\limits_{i=1}^{5000}x^{(i)}\ =\ 0.88\\
+&\hat{\sigma}^2\ =\ \frac{1}{5000-1}\sum\limits_{i=1}^{5000}\left[x^{(i)}-\hat{\mu}\right]^2\ =\ 0.208
+\end{aligned}
+\right.
+$$
+estimate kurtosis $E\left(\frac{X-EX}{\sqrt{VarX}}\right)^4$ by
+$$
+\widetilde{k}\ =\ \frac{1}{5000}\sum\limits_{i=1}^{5000}\left[\frac{x^{(i)}-\hat{\mu}}{\hat{\sigma}}\right]^4\ =\ \frac{1}{5000}\sum\limits_{i=1}^{5000}k_i\ =\ 3.213
+$$
+and compute the standard error of the estimation by
+$$
+\sqrt{\hat{Var}(\widetilde{k})}\ =\ \sqrt{\frac{1}{5000\times4999}\sum\limits_{i=1}^{5000}\left[k_i\ -\ \widetilde{k}\right]^2}\ =\ 0.243
+$$
+
+```{r echo=FALSE}
+mu_hat = mean(x.indep)
+sigma_hat = sd(x.indep)
+kurtosis = function(x) {
+    ((x-mu_hat)/sigma_hat)^4
+}
+k = kurtosis(x.indep)
+kable(data.frame(a=mu_hat, b=sigma_hat^2, c=mean(k), d=sd(k)/sqrt(5000)), digit = 3, 
+      col.names = c("$\\hat{\\mu}$", "$\\hat{\\sigma}^2$","$\\widetilde{k}$","$s.e.(\\widetilde{k})$"))
+```
+
+
+(b) Fisher information matrix :  
+$$
+\begin{aligned}
+I(\eta=(1,2))\ &=\ 
+-E\begin{bmatrix}
+\frac{\partial^2}{\partial\theta^2}logf(X)&\frac{\partial^2}{\partial\theta\partial\beta}logf(X)\\
+\frac{\partial^2}{\partial\beta\partial\theta}logf(X)&\frac{\partial^2}{\partial\beta^2}logf(X)
+\end{bmatrix}_{(1,2)}\\
+&=\ 
+-E\begin{bmatrix}
+\frac{\beta}{\theta^2}-\frac{\beta(\beta+1)}{\theta^2}\left(\frac{x}{\theta}\right)^\beta&\frac{-1}{\theta}+\frac{1}{\theta}\left(\frac{x}{\theta}\right)^\beta+\frac{\beta}{\theta}\left(\frac{x}{\theta}\right)^\beta\left(logx-log\theta\right)\\
+\frac{-1}{\theta}+\frac{1}{\theta}\left(\frac{x}{\theta}\right)^\beta+\frac{\beta}{\theta}\left(\frac{x}{\theta}\right)^\beta\left(logx-log\theta\right)&\frac{-1}{\beta^2}-\left(logx-log\theta\right)^2\left(\frac{x}{\theta}\right)^\beta
+\end{bmatrix}_{(1,2)}\\
+&=\ E\begin{bmatrix}
+6x^2-2&1-\left(1+2logx\right)x^2\\
+1-\left(1+2logx\right)x^2&\frac{1}{4}+\left(logx\right)^2x^2
+\end{bmatrix}
+\end{aligned}
+$$
+which can estimated by
+$$
+\begin{aligned}
+\hat{I}(\eta=(1,0.5))\ =\ \frac{1}{5000}
+\begin{bmatrix}
+\sum\limits_{i=1}^{5000}\left(6x^{(i)2}-2\right)&\sum\limits_{i=1}^{5000}\left(1-\left(1+2logx^{(i)}\right)x^{(i)2}\right)\\
+\sum\limits_{i=1}^{5000}\left(1-\left(1+2logx^{(i)}\right)x^{(i)2}\right)&\sum\limits_{i=1}^{5000}\left(\frac{1}{4}+\left(logx^{(i)}\right)^2x^{(i)2}\right)
+\end{bmatrix}\ =\ \begin{bmatrix}
+3.889&-0.371\\
+-0.371&0.444
+\end{bmatrix}
+\end{aligned}
+$$
+and its standard error
+$$
+s.e.(\hat{I})\ =\ \begin{bmatrix}
+\hat{Var}\left(\hat{I}_{11}\right)&\hat{Var}\left(\hat{I}_{12}\right)\\
+\hat{Var}\left(\hat{I}_{21}\right)&\hat{Var}\left(\hat{I}_{22}\right)
+\end{bmatrix}\ =\ \begin{bmatrix}
+0.0823&0.0336\\
+0.0336&0.0074
+\end{bmatrix}
+$$
+
+```{r include=FALSE}
+info.11 = function(x) {
+    6*x^2-2
+}
+
+info.12 = function(x) {
+    1-(1+2*log(x))*x^2
+}
+
+info.22 = function(x) {
+    1/4+log(x)^2*x^2
+}
+
+I_11 = info.11(x.indep)
+I_12 = info.12(x.indep)
+I_22 = info.22(x.indep)
+mean(I_11)
+mean(I_12)
+mean(I_22)
+
+sd(I_11)/sqrt(5000)
+sd(I_12)/sqrt(5000)
+sd(I_22)/sqrt(5000)
+```
+
+
+
+(c)  
+$$
+\begin{aligned}
+I(\eta=(1,0.5))\ &=\ E\begin{bmatrix}
+6x^{2}-2&1-\left(1+2logx\right)x^2\\
+1-\left(1+2logx\right)x^2&\frac{1}{4}+\left(logx\right)^2x^2
+\end{bmatrix}\\
+\ &=\ \begin{bmatrix}
+\int_0^\infty\left(6x^{2}-2\right)f(x)dx&\int_0^\infty\left(1-\left(1+2logx\right)x^2\right)f(x)dx\\
+\int_0^\infty\left(1-\left(1+2logx\right)x^2\right)f(x)dx&\int_0^\infty\left(\frac{1}{4}+\left(logx\right)^2x^2\right)f(x)dx
+\end{bmatrix}\\
+&=\ \begin{bmatrix}
+4&-0.423\\
+-0.423&0.456
+\end{bmatrix}
+\end{aligned}
+$$
+
+
+
+```{r include=FALSE}
+library(cubature)
+
+int_11 = function(x) {
+    (6*x^2-2)*weibull(x,1,2)
+}
+
+int_12 = function(x) {
+    (1-(1+2*log(x))*x^2)*weibull(x,1,2)
+}
+
+int_22 = function(x) {
+    (1/4+log(x)^2*x^2)*weibull(x,1,2)
+}
+```
+
+
+```{r}
+cuhre(int_11, lower=0, upper = 100)$int
+cuhre(int_12, lower=0, upper = 100)$int
+cuhre(int_22, lower=0, upper = 100)$int
+```
+
+
+
+(d) Draw the samples $w^{(1)},w^{(2)},...,w^{(100)}\ \overset{iid}{\sim}\ Wei(\theta=1,\beta=2)$, and compute the empirical Fisher information  
+$$
+\begin{aligned}
+\hat{I}(\eta=(1,2))\ =\ \frac{1}{100}
+\begin{bmatrix}
+\sum\limits_{i=1}^{100}\left(6w^{(i)2}-2\right)&\sum\limits_{i=1}^{100}\left(1-\left(1+2logw^{(i)}\right)w^{(i)2}\right)\\
+\sum\limits_{i=1}^{100}\left(1-\left(1+2logw^{(i)}\right)w^{(i)2}\right)&\sum\limits_{i=1}^{100}\left(\frac{1}{4}+\left(logw^{(i)}\right)^2w^{(i)2}\right)
+\end{bmatrix}\ =\ \begin{bmatrix}
+3.527&-0.224\\
+-0.224&0.414
+\end{bmatrix}
+\end{aligned}
+$$
+its standard error
+$$
+s.e.(\hat{I})\ =\ \begin{bmatrix}
+\hat{Var}\left(\hat{I}_{11}\right)&\hat{Var}\left(\hat{I}_{12}\right)\\
+\hat{Var}\left(\hat{I}_{21}\right)&\hat{Var}\left(\hat{I}_{22}\right)
+\end{bmatrix}\ =\ \begin{bmatrix}
+0.539&0.211\\
+0.211&0.036
+\end{bmatrix}
+$$
+可以發現，雖然$w^{(i)}$是直接從 Weibull distribution 中所抽出的樣本，但是他所計算出估計值的 standard error 和 bias 並沒有比起我們使用 MH method 所抽出的樣本計算出的來得小，其中最可能的原因是因為$w^{(i)}$的樣本數比較小，只有 100 個，不像我們使用 MH method 時抽出了 5000 個樣本，由於 WLLN 和 CLT 的性質，使得 MH method 所計算出估計值的 standard error 和 bias 較為收斂。
+
+
+
+```{r include=FALSE}
+w = rweibull(100,2,1)
+info_w.11 = info.11(w)
+info_w.12 = info.12(w)
+info_w.22 = info.22(w)
+c(mean(info_w.11), sd(info_w.11)/sqrt(100))
+c(mean(info_w.12), sd(info_w.12/sqrt(100)))
+c(mean(info_w.22), sd(info_w.22)/sqrt(100))
+```
+
+
+
+
+
+\newpage
+# Problem 2.  
+選擇使用 Alternative Model II : $t(\nu)$ with df $\nu\ =\ \frac{1}{\theta}\ ,\ 0<\theta \leq 1$  
+
+For $n\ =\ 20\ (or\ 100)\ ,\ M\ =\ 10000\ ,\ \nu_i\ =\ 1,2,3,...,10,\infty\ (\Leftrightarrow\ \theta_i\ =\ 1,\frac{1}{2},\frac{1}{3},..,\frac{1}{10},0)$  
+
+*Algorithm :*  
+1. 抽取 $\left\{X_k\right\}_{k=1}^n\ \overset{iid}{\sim}\ t(\nu_i)$，並計算 JB statistic
+$$
+JB\ =\ \frac{S^2}{6/n}\ +\ \frac{(K-3)^2}{24/n}
+$$
+where
+$$
+\begin{aligned}
+&S\ =\ \frac{\hat{\mu}_3}{\hat{\sigma}^3}\ =\ \frac{\frac{1}{n}\sum\limits_{k=1}^n(x_k-\bar{x})^3}{\left(\frac{1}{n}\sum\limits_{k=1}^n(x_k-\bar{x})^2\right)^{3/2}}\\
+&K\ =\ \frac{\hat{\mu}_4}{\hat{\sigma}^4}\ =\ \frac{\frac{1}{n}\sum\limits_{k=1}^n(x_k-\bar{x})^4}{\left(\frac{1}{n}\sum\limits_{k=1}^n(x_k-\bar{x})^2\right)^{4/2}}
+\end{aligned}
+$$
+2. 重複以上步驟 M(10000) 次，並記錄下每次的 JB statistic 數值  
+3. 計算所有的 JB statistics 中，大於 $\chi^2_{1-\alpha,df=2}$ ，也就是 reject 的比例，即為 Monte Carlo estimator $\hat{\pi}(\theta_i)$  
+4. 計算 Monte Carlo s.e. $\sqrt{\frac{\hat{\pi}(\theta_i)(1-\hat{\pi}(\theta_i))}{M}}$  
+5. 對每個參數 $\nu_i\ =\ \frac{1}{\theta_i}$ 重複以上四個步驟  
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(latex2exp)
+JB = function(x, n) {
+    S = (mean((x-mean(x))^3))/(sd(x)*sqrt((n-1)/n))^3
+    K = (mean((x-mean(x))^4))/(sd(x)*sqrt((n-1)/n))^4
+    return(S^2/(6/n)+(K-3)^2/(24/n))
+}
+experiment2 = function(n,df) {
+    x = rt(n, df)
+    return(JB(x,n))
+}
+experiment.normal = function(n) {
+    x = rnorm(n)
+    return(JB(x,n))
+}
+set.seed(0552)
+n = 20
+M = 10000
+reject.rate_20 = rep(0,11)
+for (i in 0:10) {
+    if (i == 0) {
+        y = replicate(M, experiment.normal(n))
+        reject.rate_20[1] = mean(y > qchisq(0.95,2))
+    } else {
+        y = replicate(M, experiment2(n, i))
+        reject.rate_20[12-i] = mean(y > qchisq(0.95,2))
+    }
+}
+n2 = 100
+reject.rate_100 = rep(0,11)
+for (i in 0:10) {
+    if (i == 0) {
+        y = replicate(M, experiment.normal(n2))
+        reject.rate_100[1] = mean(y > qchisq(0.95,2))
+    } else {
+        y = replicate(M, experiment2(n2, i))
+        reject.rate_100[12-i] = mean(y > qchisq(0.95,2))
+    }
+}
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(knitr)
+table = data.frame(theta = c(0,1/10:1), 
+                   MC.est_20 = reject.rate_20, 
+                   MC.se_20 = sqrt(reject.rate_20*(1-reject.rate_20)/M), 
+                   MC.est_100 = reject.rate_100, 
+                   MC.se_100 = sqrt(reject.rate_100*(1-reject.rate_100)/M))
+kable(table, digits = 3, col.names = c("$\\theta_i$", "MC.est(n=20)", "MC.se(n=20)", "MC.est(n=100)","MC.se(n=100)"))
+```
+
+\newpage
+Plot $\hat{\pi}(\theta_i)$ v.s. $\theta_i$ to sketch the power function  
+
+```{r echo=FALSE}
+plot(c(0,(1/10:1)),reject.rate_20, type="b", pch=16, axes=F, lwd=2, ylim=c(0,1),
+     xlab = TeX("$\\theta$"), ylab = "Power")
+axis(1, c(1/(1:10),0), at=c(1/(1:10),0))
+axis(2)
+axis(2, 0.05, at = 0.05, col = 2, col.axis = 2, las = 2)
+box()
+lines(c(0,(1/10:1)),reject.rate_100,col=3,lwd=2, pch=16, type="b")
+abline(h = 0.05, col = 2, lty = 2)
+legend("topleft", legend = c("n=100","n=20",TeX("$\\alpha$")), col = c(3,1,2), lty = c(1,1,2), bty = "n")
+```
+
++ 隨著 $\theta$ 的數值逐漸遠離 0，也就是 alternative distribution 越來越不像 *N(0,1)*，我們能檢定出這兩個分配不同的機率也越大，*power* 值就越大  
++ 將每次實驗抽取樣本數 n 從 20 增加到 100，我們能從 alternative distribution 中獲得的資訊也越多，能檢定出這兩個分配不同的機率也越大，*power* 值就越大
+
+
+
