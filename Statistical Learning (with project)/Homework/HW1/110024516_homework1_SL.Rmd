@@ -1,0 +1,389 @@
+---
+title: "Statistical Learning Homework 1"
+author: "110024516 邱繼賢"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1.5}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(psych)
+library(latex2exp)
+library(knitr)
+library(tibble)
+library(summarytools)
+```
+
+## Problem 1.
+
+### (a) Exploratory data analysis (EDA) among 4 variables
+
+```{r}
+data1 = read.csv("ozone.csv")
+data1 = data1[,c(2,3,4,1)]
+dim(data1)
+summary(data1)
+```
+
+-   此筆資料共 111 個觀測值，4 個變數
+-   4 個變數皆為連續型變數
+-   粗略觀察各變數級距，並沒有發現明顯離群值(outlier)
+
+```{r}
+pairs.panels(data1, ellipses = F)
+```
+
+-   變數 *ozone* 呈現明顯右偏現象
+-   變數 *ozone* 和 *temperature* 有較強的正相關，相關係數 = 0.7
+-   變數 *ozone* 和 *wind* 有較強的負相關，相關係數 = -0.61
+-   變數 *temperature* 和 *wind* 有中等強度的負相關，相關係數 = -0.5，配飾模型時可能要注意此二變數的共線性
+-   變數 *ozone* 和 *radiation* 散佈圖呈現些微二次函數的趨勢
+-   變數 *ozone* 和 *temperature* 散佈圖呈現類似遞增的二次函數趨勢
+-   變數 *ozone* 和 *wind* 散佈圖呈現類似遞減的二次函數趨勢
+
+### (b) Regression model fitting and model summaries
+
+配飾模型 
+$$
+ozone\ =\ \beta_0\ +\ \beta_1\ radiation\ +\ \beta_2\ temperature\ +\ \beta_3\ wind\ +\ \epsilon
+$$
+
+```{r}
+fit1.1 = lm(ozone ~ radiation + temperature + wind, data1)
+summary(fit1.1)
+```
+
+-   變數 *radiation, temperature, wind* 的效應皆呈現顯著
+-   變數 *radiation, temperature, wind* 所對應係數的正負值(+,+,-)，與三變數和 *ozone* 之間的相關係數正負值一致，符合直觀
+-   $R^2\ =\ 60.62\%$ 模型表現還不是很好
+
+對模型加入各變數的二次項和交互作用項：
+
+```{r}
+fit1.2 = lm(ozone ~ .^2 + I(radiation^2) + I(temperature^2) + I(wind^2), data1)
+summary(fit1.2)
+```
+
+-   $R^2\ =\ 73.83$ 相較於前一個模型有所上升
+-   變數 *radiation* 和 *radiation\^2* 的效應皆呈現不顯著，可能是因為兩變數間的共線性造成
+
+將一次和二次項變數皆改成 orthogonal polynomial 的形式，並考慮所有的二階和三階交互作用項，重新配飾模型：
+
+```{r}
+fit1.3 = lm(ozone ~ poly(radiation,2)*poly(temperature,2)*poly(wind,2), data1)
+summary(fit1.3)
+```
+
+-   $R^2\ =\ 81.69$ 此模型解釋能力已相當好
+-   有非常多的效應都呈現不顯著，需進一步進行 model selection
+
+### (c) Model selection and diagonostics
+
+利用 AIC criterion 進行 model selection：
+
+```{r}
+fit1.4 = step(fit1.3)
+summary(fit1.4)
+```
+
+-   所有的三階交互作用都被移除
+-   變數 *radiation* 和 *wind* 之間所有的二階交互作用都被移除
+-   $R^2\ =\ 79.09\%$ 模型解釋能力雖有所下降，但使用的變數減少非常多
+
+對模型進行診斷：
+
+```{r}
+par(mfrow = c(2,2))
+plot(fit1.4, pch = 16)
+```
+
+-   Normal Q-Q plot 大致呈現一直線，代表此模型 residual 的 normality assumption 成立
+-   也沒有出現特別明顯的 outlier 或 influential observation
+-   但是 residual 的 variance 有隨著 fitted value 變大而上升，呈現出 non-constant variance 的現象
+
+將 response variable *ozone* transform 成 $\sqrt{ozone}$，重新配飾模型：
+
+```{r}
+fit1.5 = update(fit1.4, sqrt(ozone)~.)
+summary(fit1.5)
+```
+
+-   $R^2\ =\ 81.14\%$ 有所上升
+-   呈現顯著的變數和前一個模型相差不大
+
+一樣對此模型進行診斷：
+
+```{r}
+par(mfrow = c(2,2))
+plot(fit1.5, pch = 16)
+```
+
+-   此模型的 residual 不再呈現如上一個模型 non-constant variance 的現象
+
+故此模型為最終決定的配飾模型。
+
+### (d) Comments on your prediction results and scientific findings
+
+觀察所有預測值 $\sqrt{\hat{ozone}}$ 和實際值 $\sqrt{ozone}$ 的關係
+
+```{r}
+fit1.5_pred = predict(fit1.5, newdata = data1[,-4], se.fit=TRUE, interval="prediction", level=0.95)
+plot(sqrt(data1$ozone), fit1.5$fitted.values, ylim = c(0,13), col=2, pch=16, ylab=TeX("Predict\\ $\\sqrt{ozone}$"), xlab=TeX("Observed\\ $\\sqrt{ozone}$"))
+curve(x^1, from=min(sqrt(data1$ozone)), to=max(sqrt(data1$ozone)), col=4, lwd=2, add=T)
+for (i in 1:111){
+    lines(rep(sqrt(data1$ozone[i]),2), fit1.5_pred$fit[i,2:3], col="gray50", lwd=1)
+}
+legend("topleft", legend=c("predicted value", "95% prediction interval"), col=c("red","gray50"), lty=c(0,1), pch=c(16,-1), lwd=1)
+```
+
+-   所有的 $\left(\sqrt{ozone}\ ,\ \sqrt{\hat{ozone}}\right)$ 都落在直線 $y\ =\ x$ 附近
+-   每一個預測值的 95% prediction interval 幾乎都有覆蓋到其所對應的觀測值，代表我們模型的預測效果不錯
+
+
+將變數 *ozone* 的預測值對變數 *radiation, temperature, wind* 作圖：
+
+```{r}
+par(mfrow = c(2,2))
+grid1 = seq(7, 334, 0.5)
+pred1 = predict(fit1.5, data.frame(radiation=grid1, temperature=mean(data1$temperature), wind=mean(data1$wind)), 
+                se.fit=TRUE, interval="prediction", level=0.95)
+matplot(grid1, pred1$fit^2, lty=c(1,2,2), lwd = 2, type = "l", xlab = "radiation",ylab = "Predicted ozone")
+rug(data1$radiation)
+
+grid2 = seq(57, 100, 0.5)
+pred2 = predict(fit1.5, data.frame(radiation=mean(data1$radiation), temperature=grid2, wind=mean(data1$wind)), 
+                se.fit=TRUE, interval="prediction", level=0.95)
+matplot(grid2, pred2$fit^2, lty=c(1,2,2), lwd = 2, type = "l", xlab = "temperature",ylab = "Predicted ozone")
+rug(data1$temperature)
+
+grid3 = seq(2, 25, 0.1)
+pred3 = predict(fit1.5, data.frame(radiation=mean(data1$radiation),
+                                   temperature=mean(data1$temperature),wind=grid3), 
+                se.fit=TRUE, interval="prediction", level=0.95)
+matplot(grid3, pred3$fit^2, lty=c(1,2,2), lwd = 2, type = "l", xlab = "wind",ylab = "Predicted ozone")
+rug(data1$wind)
+```
+
++ 隨著 *radiation* 數值上升，*ozone* 的預測值也隨之上升，但上升的幅度會逐漸減小
++ 隨著 *temperature* 數值上升，*ozone* 的預測值隨之上升，且幅度逐漸變大
++ 隨著 *wind* 數值上升，*ozone* 的預測值先降後升
+
+
+
+
+\newpage
+
+## Problem 2.  
+
+```{r}
+data2 = read.csv("prostate.csv")
+data2_train = data2 %>% filter(train.idx == 1) %>% select(-train.idx)
+data2_val = data2 %>% filter(train.idx == 0) %>% select(-train.idx)
+```
+
+### (a) EDA  
+
+
+
+
+```{r}
+dim(data2_train)
+data2_train$svi = as.factor(data2_train$svi)
+summary(data2_train)
+```
+
++ Training data 一共 70 筆觀測值，9 個變數
++ 粗略觀察各變數級距，並無發現明顯離群值(outlier)
++ 各變數類型如下：
+
+| **變數名稱**    | 變數類型                  | 變數解釋                             |
+|-------------|-----------------------|----------------------------------|
+| **lcavol**  | continuous            | log cancer volume                |
+| **lweight** | continuous            | log prostate weight              |
+| **age**     | approxiate continuous | age                              |
+| **lbph**    | continuous            | log 良性前列腺增生量                     |
+| **svi**     | factor variable {0,1} | seminal vesicle invasion         |
+| **lcp**     | continuous            | log of capsular penetration      |
+| **gleason** | ordinal variable      | Gleason score                    |
+| **pgg45**   | continuous            | percent of Gleason scores 4 or 5 |
+| **lpsa**    | continuous            | log of prostate-specific antigen |
+
+
+將連續型的變數計算相關係數及繪製 pairwise scatter plots：
+
+```{r}
+pairs.panels(data2_train[,-c(5,7)], ellipses = F)
+```
+
++ 反應變數 *lpsa* 本身分布大致對稱，並無左右偏移
++ 反應變數 *lpsa* 和解釋變數 *lca, lcavol* 之間有較強的正相關，相關係數分別為 0.57, 0.76
++ 反應變數 *lpsa* 和解釋變數 *lcavol* 的散佈圖有正斜率的線性關係
++ 解釋變數 *lcp* 和 *lcavol, pgg45* 之間有較強的正相關，相關係數分別為 0.69, 0.67，配飾模型時可能會有共線性的情況發生
+
+
+### (b) Determine a good regression model for predicting data  
+
+在配飾模型中放入所有解釋變數的 main effects 和 2-factor interaction effects：
+
+```{r}
+fit2.1 = lm(lpsa ~ .^2, data2_train)
+summary(fit2.1)
+```
+
++ $R^2\ =\ 86.54\%$ 模型可解釋之比例相當高
++ 但模型中有非常多不顯著的效應
+
+利用 AIC criterion 進行 model selection：
+
+
+```{r}
+fit2.2 = step(fit2.1)
+summary(fit2.2)
+```
+
+模型變數已經減少很多，但還是有不少不顯著的效應，再移除所有不顯著的效應：
+
+```{r}
+fit2.3 = update(fit2.2, .~.-lweight-lbph-lcp-lcavol:lbph-lcavol:gleason-lweight:lbph-lweight:svi1-age:svi1-age:pgg45-lbph:lcp)
+summary(fit2.3)
+```
+
+
+
+
++ $R^2\ =\ 80.97\%$ 有所下降，但模型使用的變數減少了很多
++ 留下來的變數大部份皆為顯著
+
+
+對模型進行診斷：
+
+```{r}
+par(mfrow = c(2,2))
+plot(fit2.3, pch = 16)
+```
+
++ Residual plot 沒有明顯 mean curve 和 non-constant variance
++ 藉由 normal Q-Q plot 也可得知 residual 服從 norality assumption
++ 沒有特別明顯的 outlier 或 influential observation
+
+故此模型即為我們的配飾模型。
+
+
+### (c) Describe the important main effects and interaction effects  
+
+藉由 training data 所得的配飾模型如下：
+$$
+\begin{aligned}
+\hat{lpsa}=&3.22+2.44\ lcavol-0.26\ age+10.21\ svi+1.86\ gleason-0.12\ pgg45-0.44\ lcavol\times lweight\\
+&+0.16\ lcavol\times lcp+0.07\ lweight\times age-0.61\ lweight\times gleason-0.52\ lbph\times svi+0.009\ lbph\times pgg45\\
+&-1.86\ svi\times gleason+0.05\ svi\times pgg45-0.02\ lcp\times pgg45+0.02\ gleason\times pgg45\\
+&+\text{(unimportant effects)}\ +\ \hat{\epsilon}
+\end{aligned}
+$$
+
+因為模型中有很多顯著的二階交互作用，要描述其中一個解釋變數如何影響反應變數，都必須考慮其他的解釋變數的數值為多少，為方便呈現，整理如下表(以下結果皆忽略不顯著的各效應)：
+
+
+| 每增加 1 單位____變數 | lpsa 會增加____單位                                      |
+|--------------------|---------------------------------------------------------|
+| *lcavol*             | 2.44 - 0.44 *lweight* + 0.16 *lcp*                          |
+| *age*                | -0.26 + 0.07 *lweight*                                    |
+| *svi*                | 10.21 - 0.52 *lbph* - 1.86 *gleason* + 0.05 *pgg45*            |
+| *gleason*            | 1.86 - 0.61 *lweight* - 1.86 *svi* + 0.02 *pgg45*              |
+| *pgg45*              | -0.12 + 0.009 *lbph* + 0.05 *svi* - 0.02 *lcp* + 0.02 *gleason* |
+
+
+### (d) Predict lpsa for the validation data set based on the fitted model, with their prediction intervals. And compared the prediction results to the true observations. Comment on your model performance.  
+
+將 validation data set 的預測值及實際觀測值繪製成 scatter plot：
+
+```{r}
+data2_val$svi = as.factor(data2_val$svi)
+pred_val = predict(fit2.3, newdata = data2_val[,-9], se.fit = T, interval = "prediction", level = 0.95)
+plot(data2_val$lpsa, pred_val$fit[,1], pch = 16, col = 2, xlab = "True Observatioin", ylab = "Predicted Value")
+curve(x^1, from = min(data2_val$lpsa), to = max(data2_val$lpsa), col = 4, lwd = 2, add = T)
+for (i in 1:27){
+    lines(rep(data2_val$lpsa[i],2), pred_val$fit[i,2:3], col = "gray50", lwd = 1)
+}
+legend("topleft", legend = c("predicted value", "95% prediction interval"), col = c("red", "gray50"), lty = c(0,1), pch = c(16,-1), lwd = 1)
+```
+
++ 可以看到大部份的點大致落在 $y\ =\ x$ 直線兩側
++ 不是所有的 $95\%$ prediction interval 都能覆蓋住 true observation  
+
+分別計算此模型的 $95\%$ prediction interval 覆蓋住 training data 和 validation data true observation 的比例
+
+```{r}
+pred_train = predict(fit2.2, newdata = data2_train[,-9], se.fit = T, interval = "prediction", level = 0.95)
+prob_train = mean(pred_train$fit[,2]<data2_train$lpsa & data2_train$lpsa<pred_train$fit[,3])
+prob_val = mean(pred_val$fit[,2]<data2_val$lpsa & data2_val$lpsa<pred_val$fit[,3])
+c(prob_train, prob_val)
+```
+
+再對兩個 data sets 分別計算 $MSE\ =\ \frac{1}{n}\sum_{i=1}^n\left(\hat{y}_i\ -\ y_i\right)^2$
+
+
+```{r}
+mse_train = mean((pred_train$fit[,1]-data2_train$lpsa)^2)
+mse_val = mean((pred_val$fit[,1]-data2_val$lpsa)^2)
+c(mse_train, mse_val)
+```
+
+Training data 的預測結果比 validation data 來得好，可能有 overfitting 的現象發生，可以嘗試簡化 training data 的 fitted model，有機會能改善此現象。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
