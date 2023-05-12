@@ -1,0 +1,234 @@
+---
+title: "Linear Model Assignment2"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+    number_sections: true
+author: "110024516 統研碩一 邱繼賢"
+date: "2021 年 10 月 16 日"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+\textbf{1. For the data in the problem 2 in Assignment 1. Fit a regression model with the durable press rating (i.e., press) as the response and the four other variables as predictors. Present the output.}
+```{r}
+data = read.table("wrinkle.txt", header = T)
+fit = lm(press ~ HCHO + catalyst + temp + time, data = data)
+summary(fit)
+```
+
+
+
+\textbf{a. What percentage of variation in the response is explained by these predictors?}
+```{r}
+summary(fit)$r.squared
+```
+The percentage of variation in the response is explained by these predictors is about $$R^2\ \approx \ 69.24\%$$
+
+
+\newpage
+\textbf{b. Which observation has the largest (positive) residual? Give the case number.}
+```{r}
+res = summary(fit)$residuals
+res[res == max(res)]
+```
+residual 的最大值為：第九個觀察值的 $residual\ =\ 1.653322$
+
+
+
+\textbf{c. Compute the mean and median of the residuals.}
+```{r}
+mean(res)
+median(res)
+```
+The mean of the residuals is very small and closed to zero.  
+The median of the residuals is about -0.0853.
+
+
+
+\textbf{d. Compute the correlation of the residuals with the fitted values.}
+```{r}
+fitted_value = fit$fitted.values
+cor(res, fitted_value)
+```
+The correlation of the residuals with the fitted values is very small and closed to zero.
+
+
+
+\textbf{e. Compute the correlation of the residuals with the formaldehyde concentration (i.e., HCHO).}
+
+```{r}
+cor(res, data$HCHO)
+```
+The correlation of the residuals with the formaldehyde concentration is very small and closed to zero. 
+
+
+
+\textbf{f. Suppose the temperature was increased by 10 while the other predictors were held constant. Predict the change in the press rating.}
+
+```{r}
+fit$coefficients[4] * 10
+```
+預測 press rating 會上升 10 倍的 estimated coefficient of temperature，大約為 0.1123。
+
+
+\newpage
+\textbf{g. Add the variable "HCHC-catalyst" to the model as a predictor. Show the regression output. Add the variable "HCHO/catalyst" to the (original) model as a predictor. Show the output. Why is there no real change in the fit for former model but there is change for the latter model?}
+```{r}
+fit2 = lm(press ~ HCHO + catalyst + temp + time + (HCHO-catalyst), data = data)
+summary(fit2)
+fit3 = lm(press ~ HCHO + catalyst + temp + time + (HCHO/catalyst), data = data)
+summary(fit3)
+```
+因為變數 HCHO-catalyst 和原先的變數有共線性，所以做出來的模型會跟原本的一模一樣；而變數 HCHO/catalyst 和原先的變數之間並沒有共線性，所以做出來的模型會有所不同。
+
+
+
+
+\textbf{2. }  
+\textbf{a. Fit a regression model with Fertility as the response and all the other variables as predictors. Compute the estimated covariance matrix of the regression coefficients.}
+```{r}
+df = read.table("swiss.txt", header = T)
+fit = lm(Fertility ~ Agriculture + Examination + Education + 
+             Catholic + Mortality, data = df)
+summary(fit)
+summary(fit)$cov * (summary(fit)$sigma^2) # cov matrix of beta hat
+```
+
+\textbf{b. Use the residuals from the model in part a as the response in a new model with the same predictors. Compare the regression summary for this new model with the previous summary. Identify the similarities and differences and explain mathematically why this occurred.}
+```{r}
+res = fit$residuals
+fit2 = lm(res ~ Agriculture + Examination + Education + 
+                 Catholic + Mortality, data = df)
+summary(fit2)
+```
+(i) 各變數的係數估計值都呈現非常接近 0 的數值，這是因為 residual 在向量空間中和變數所形成的空間處於直交，所以將 residual 投影到該空間會非常接近一個點，故造成此現象。  
+(ii) $R^2$ 的數值非常小，因為 $R^2$ 的意義為模型對觀測值的可解釋比例，由於(i)所說的原因，此模型對 residual 並不能有很好的解釋。  
+(iii) 此報表和 a. 小題報表中的 residual standard error 一致，是因為兩個模型的 residual sum of square 和其可自由變動的維度都一樣。
+
+
+
+\newpage
+\textbf{c. Now use the fitted values from the model in part a as the response in a new model with the same predictors. Compare the regression summary for this new model with the first summary. Identify the similarities and differences and explain mathematically why this occurred.}
+```{r}
+fitted_vl = fit$fitted.values
+fit3 = lm(fitted_vl ~ Agriculture + Examination + Education + 
+              Catholic + Mortality, data = df)
+summary(fit3)
+```
+(i) 此報表中的 estimated coefficients 和 a. 小題中所呈現的一模一樣，是因為此題所使用的 response variable 就是全部落在 a. 的回歸線上的 predicted values，所以此題的 estimated coefficients 不會改變。  
+(ii) 此報表的 residual standard error 非常接近 0，而且 $R^2\ =\ 1$ ，皆是因為所有的觀測值都落在回歸線上，回歸線可以完美解釋，不會有誤差，所有的變數對模型的貢獻都極為顯著也是同樣的原因。
+
+
+\newpage
+\textbf{3. The data set gives information on capital, labor and value added for each of three economic sectors: Food and kindred products (20), electrical and electronic machinery, equipment and supplies (36) and transportation equipment (37). For each sector:}
+```{r include=FALSE}
+data = read.table("E2.9.txt", skip = 2)
+names(data) = c("year", "k_20", "k_36", "k_37", "l_20", "l_36", "l_37", "v_20", "v_36", "v_37")
+```
+
+
+\textbf{(1) For food and kindred products (20)}  
+\textbf{a. }
+```{r}
+fit1_20 = lm(log(v_20) ~ log(k_20) + log(l_20), data = data)
+summary(fit1_20)$coef
+```
+The estimation of $\beta_1$ is about 0.2269, and the estimation of $\beta_2$ is about -1.4585.
+
+
+\textbf{b. }
+```{r}
+fit2_20 = lm(log(v_20) ~ log(k_20/l_20), offset = log(l_20), data = data)
+summary(fit2_20)$coef
+```
+The estimation of $\beta_1$ is about 1.2897, and the estimation of $\beta_2$ is about -0.2897. 
+
+
+
+\textbf{c. }
+```{r}
+fit3_20 = lm(log(v_20) ~ log(k_20) + log(l_20) + year, data = data)
+summary(fit3_20)$coef
+```
+The estimation of $\beta_1$ is about 0.0444, and the estimation of $\beta_2$ is about -0.9082.
+
+
+\textbf{d. }
+```{r}
+fit4_20 = lm(log(v_20) ~ log(k_20/l_20) + year, offset = log(l_20), data = data)
+summary(fit4_20)$coef
+```
+The estimation of $\beta_1$ is about -0.4947, and the estimation of $\beta_2$ is about 1.4947. 
+
+\newpage
+\textbf{(2) For electrical and electronic machinery, equipment and supplies (36)}  
+\textbf{a. }
+```{r}
+fit1_36 = lm(log(v_36) ~ log(k_36) + log(l_36), data = data)
+summary(fit1_36)$coef
+```
+The estimation of $\beta_1$ is about 0.5261, and the estimation of $\beta_2$ is about 0.2543. 
+
+
+\textbf{b. }
+```{r}
+fit2_36 = lm(log(v_36) ~ log(k_36/l_36), offset = log(l_36), data = data)
+summary(fit2_36)$coef
+```
+The estimation of $\beta_1$ is about 0.9001, and the estimation of $\beta_2$ is about 0.0999.
+
+\textbf{c. }
+```{r}
+fit3_36 = lm(log(v_36) ~ log(k_36) + log(l_36) + year, data = data)
+summary(fit3_36)$coef
+```
+The estimation of $\beta_1$ is about 0.8210, and the estimation of $\beta_2$ is about 0.8825.
+
+\textbf{d. }
+
+```{r}
+fit4_36 = lm(log(v_36) ~ log(k_36/l_36) + year, offset = log(l_36), data = data)
+summary(fit4_36)$coef
+```
+The estimation of $\beta_1$ is about 0.0345, and the estimation of $\beta_2$ is about 0.9655.
+
+\newpage
+\textbf{(3) For transportation equipment (37)}  
+\textbf{a. }
+
+```{r}
+fit1_37 = lm(log(v_37) ~ log(k_37) + log(l_37), data = data)
+summary(fit1_37)$coef
+```
+The estimation of $\beta_1$ is about 0.5057, and the estimation of $\beta_2$ is about 0.8455.
+
+
+\textbf{b. }
+```{r}
+fit2_37 = lm(log(v_37) ~ log(k_37/l_37), offset = log(l_37), data = data)
+summary(fit2_37)$coef
+```
+The estimation of $\beta_1$ is about 0.0096, and the estimation of $\beta_2$ is about 0.9904.
+
+\textbf{c. }
+
+```{r}
+fit3_37 = lm(log(v_37) ~ log(k_37) + log(l_37) + year, data = data)
+summary(fit3_37)$coef
+```
+The estimation of $\beta_1$ is about 0.1586, and the estimation of $\beta_2$ is about 1.1953.
+
+
+\textbf{d. }
+```{r}
+fit4_37 = lm(log(v_37) ~ log(k_37/l_37) + year, offset = log(l_37), data = data)
+summary(fit4_37)$coef
+```
+The estimation of $\beta_1$ is about -0.3168 and the estimation of $\beta_2$ is about 1.3168.

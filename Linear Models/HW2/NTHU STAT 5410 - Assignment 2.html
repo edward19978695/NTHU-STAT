@@ -1,0 +1,152 @@
+
+<!-- saved from url=(0082)http://www.stat.nthu.edu.tw/~swcheng/Teaching/stat5410/assignment/assignment2.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=Big5">
+<meta http-equiv="Content-Language" content="zh-tw">
+
+<meta name="GENERATOR" content="Microsoft FrontPage 6.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>NTHU STAT 5410 - Assignment 2</title>
+</head>
+
+<body>
+
+<h1><b>Assignment 2</b></h1>
+<ol class="Question" id="Question">
+  <li><a name="Problem 1"></a>For the data in the 
+	<a href="http://www.stat.nthu.edu.tw/~swcheng/Teaching/stat5410/assignment/assignment1.html#Problem%202">problem 2</a> in Assignment 1. Fit a regression model with 
+	the durable press rating (i.e., <font face="Courier New">press</font>) as 
+	the response and the four other variables as predictors. Present the output.
+	<ol type="i">
+		<li type="a">What percentage of variation in the response is explained by these 
+		predictors?</li>
+		<li type="a"><span lang="en-us">Which observation has the largest (positive) 
+		residual? Give the case number.</span></li>
+		<li type="a"><span lang="en-us">Compute the mean and median of the residuals.</span></li>
+		<li type="a"><span lang="en-us">Compute the correlation of the residuals with the fitted values.</span></li>
+		<li type="a"><span lang="en-us">Compute the correlation of the residuals with the formaldehyde 
+		concentration (i.e., <font face="Courier New">HCHO</font>).</span></li>
+		<li type="a"><span lang="en-us">Suppose t<font face="Times New Roman">he temperature wa</font>s increased by 10 while the other 
+		predictors were held constant. Predict the change in the press rating.</span></li>
+		<li type="a"><span lang="en-us">Add the variable 
+		<font face="Courier New">"HCHC-catalyst"</font> to 
+		the model as a predictor. Show the regression output. Add the variable
+		<font face="Courier New">"HCHO/catalyst"</font> to the (original) model as 
+		a predictor. Show the output. Why is there no real change in the fit for 
+		former model but there is change for the latter model?</span></li>
+	</ol>
+	<p>　</p></li>
+	<span lang="en-us">
+	</span><span lang="en-us">
+	<li><a name="Problem 2"></a>The <font face="Courier New">
+	<a href="http://www.stat.nthu.edu.tw/~swcheng/Teaching/stat5410/data/swiss.txt">data</a></font> was used to study the relationship between fertility and 5 
+	socioeconomic indicators in 1888 Switzerland. The variables in the data are:
+	<br>&nbsp;&nbsp;&nbsp; <font face="Courier New">Fertility</font>: a standardized 
+	fertility measure for each of 47 French-speaking sub-cantons of Switzerland 
+	around 1888, <br>&nbsp;&nbsp;&nbsp; <font face="Courier New">Agriculture</font>: percent of 
+	population involved in agriculture as an occupation,<br>&nbsp;&nbsp;&nbsp; 
+	<font face="Courier New">Examination</font>: percent of 
+	draftees receiving highest mark on army examination, <br>&nbsp;&nbsp;&nbsp; 
+	<font face="Courier New">Education</font>: percent of 
+	population whose education is beyond primary school, <br>&nbsp;&nbsp;&nbsp; 
+	<font face="Courier New">Catholic</font>: percent of 
+	population whose are Catholic, <br>&nbsp;&nbsp;&nbsp; 
+	<font face="Courier New">Mortality</font>: percent of live 
+	births who live less than 1 year, i.e., infant mortality.<br>　<ol class="Question" id="Question" type="i">
+		<li type="a">Fit a regression model with <font face="Courier New">Fertility</font> 
+		as the response and all the other variables as predictors. Compute the 
+		estimated covariance matrix of the regression coefficients.</li>
+		<li type="a">Use the residuals from the model in<font face="Courier New"> part a
+		</font>as the response in a new 
+		model with the same predictors. Compare the regression summary for this 
+		new model with the previous summary. Identify the similarities and 
+		differences and explain mathematically why this occurred.</li>
+		<li type="a">Now use the fitted values from the model in<font face="Courier New"> part a
+		</font>as the response 
+		in a new model with the same predictors. Compare the regression summary 
+		for this new model with the first summary. Identify the similarities and 
+		differences and explain mathematically why this occurred. </li>
+	</ol></li>
+</span></ol>
+<ol start="3">
+	<li>
+	<p style="margin-top: 0; margin-bottom: 0"><a name="Problem 3"></a>The 
+	<font face="Courier New"> <a href="http://www.stat.nthu.edu.tw/~swcheng/Teaching/stat5410/data/E2.9.txt">data  
+    set</a></font> gives information on capital, labor and value added for each of  
+    three economic sectors: Food and kindred products (20), electrical and  
+    electronic machinery, equipment and supplies (36) and transportation  
+    equipment (37). For each sector: 
+    </p></li>
+</ol>
+<blockquote>
+	<ol type="i">
+		<li type="a">
+		<p style="margin-top: 0; margin-bottom: 0">Consider the model <i>V<sub>t&nbsp;
+		</sub>=αK<sub>t</sub><sup>β<font size="2">1</font></sup>L<sub>t</sub><sup>β<font size="2">2</font></sup>ε<sub>t  
+        </sub></i>, where the subscript <i>t</i> indicates year, <i>V<sub>t&nbsp;
+		</sub></i>is value added, <i>K<sub>t</sub></i>&nbsp; is capital, <i>L<sub>t</sub></i>&nbsp;  
+        is labor, and <i>ε<sub>t</sub></i>&nbsp; is  
+        an error term with <i>E(log(ε<sub>t</sub>))=0</i>  
+        and <i>var(log(ε<sub>t</sub>))</i> a  
+        constant. Assuming that the errors are independent, and taking logs of  
+        both sides of the above model, estimate <i>β<sub>1</sub></i>&nbsp;  
+        and <i>β<sub>2</sub></i><sub>&nbsp;</sub>.</p></li>
+		<li type="a">
+		<p style="margin-top: 0; margin-bottom: 0">The model given in<font face="Courier New"> part 
+		a </font>above is said to be of the Cobb-Douglas form. It  
+        is easier to interpret if <i>β<sub>1<span lang="en-us"> </span>
+		</sub></i>+ <i>β<sub>2</sub></i> =1. Estimate
+		<i>β<sub>1</sub></i>&nbsp;and <i>β<sub>2</sub></i><sub>&nbsp;</sub>  
+        under this constraint.</p></li>
+		<li type="a">
+		<p style="margin-top: 0; margin-bottom: 0">Sometimes the model&nbsp; <i>V<sub>t&nbsp;
+		</sub>=αγ<sup>t</sup>K<sub>t</sub><sup>β<font size="2">1</font></sup>L<sub>t</sub><sup>β<font size="2">2</font></sup>ε<sub>t</sub></i>&nbsp;  
+        is considered, where <i>γ<sup>t</sup></i>&nbsp;  
+        is assumed to account for technological development. Estimate <i>β<sub>1</sub></i>  
+        and <i>β<sub>2</sub></i><sub>&nbsp;</sub> for this model.</p></li>
+		<li type="a">
+		<p style="margin-top: 0; margin-bottom: 0">Estimate&nbsp; <i>β<sub>1</sub></i> 
+        and <i>β<sub>2</sub></i><sub>&nbsp;</sub> in the model in 
+		<font face="Courier New">part c</font>, under the constraint&nbsp; <i>β<sub>1<span lang="en-us">
+		</span></sub></i>+ 
+		<i>β<sub>2</sub></i>  
+        =1.</p></li>
+	</ol>
+</blockquote>
+<p>　</p>
+
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+
+
+
+</body></html>
