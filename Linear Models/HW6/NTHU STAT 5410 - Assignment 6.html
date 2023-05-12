@@ -1,0 +1,159 @@
+
+<!-- saved from url=(0082)http://www.stat.nthu.edu.tw/~swcheng/Teaching/stat5410/assignment/assignment6.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=Big5">
+<meta http-equiv="Content-Language" content="zh-tw">
+
+<meta name="GENERATOR" content="Microsoft FrontPage 6.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>NTHU STAT 5410 - Assignment 6</title>
+</head>
+
+<body>
+
+<h1><font face="Times New Roman">Assignment 6</font></h1>
+<p>　</p>
+<ol>
+  <li><font face="Times New Roman">&nbsp;<a name="Problem 1"></a></font><font face="Courier New"><a name="Problem 1" href="http://www.stat.nthu.edu.tw/~swcheng/Teaching/stat5410/data/salary.txt">Data</a></font><font face="Times New Roman"> on 
+	salaries,</font><font face="Courier New"> Y83 </font>
+	<font face="Times New Roman">and</font><font face="Courier New"> Y84</font><font face="Times New Roman">, 
+	for chairs of the 50 largest corporations in Chicago are available. We have 
+	information about their age, number of shares they hold, total revenues and 
+	income. Using a model with percentage increase given from 1983 to 1984 
+	(i.e., </font>
+	<font face="Courier New">100*(Y84-Y83)/Y83</font><font face="Times New Roman">) as the response, and the remaining 4 variables as 
+	predictors, check for outliers. Do you feel the variances of the raises are 
+	equal? If you feel they are not equal, what transformation could be used to 
+	improve matters? Make appropriate plots and 
+	give your conclusions. </font></li>
+  <li><font face="Times New Roman"><a name="Problem 2"></a>The </font>
+	<font face="Courier New"><a href="http://www.stat.nthu.edu.tw/~swcheng/Teaching/stat5410/data/sat.txt">data</a></font><font face="Times New Roman"> for this 
+	question come from "Getting What You Pay For: The Debate Over Equity in 
+	Public School Expenditures" published in "<i>Journal of Statistics Education</i>" (Guber, 
+	1999). The cases are the 50 US states. The variables are: </font>
+	<dl>
+		<table border="1" width="100%">
+			<tbody><tr>
+				<td width="82" valign="top"><font face="Courier New">expend:</font></td>
+				<td valign="top"><font face="Times New Roman">Current 
+		expenditure per pupil in average daily attendance in public elementary 
+		and secondary schools, 1994-95 (in thousands of dollars)</font></td>
+			</tr>
+			<tr>
+				<td width="82" valign="top"><font face="Courier New">ratio:</font></td>
+				<td valign="top"><font face="Times New Roman">Average 
+		pupil/teacher ratio in public elementary and secondary schools, Fall 
+		1994</font></td>
+			</tr>
+			<tr>
+				<td width="82" valign="top"><font face="Courier New">salary:</font></td>
+				<td valign="top"><font face="Times New Roman">Estimated 
+		average annual salary of teachers in public elementary and secondary 
+		schools, 1994-95 (in thousands of dollars)</font></td>
+			</tr>
+			<tr>
+				<td width="82" valign="top"><font face="Courier New">takers:</font></td>
+				<td valign="top"><font face="Times New Roman">Percentage of 
+		all eligible students taking the SAT, 1994-95</font></td>
+			</tr>
+			<tr>
+				<td width="82" valign="top"><font face="Courier New">verbal:</font></td>
+				<td valign="top"><font face="Times New Roman">Average verbal 
+		SAT score, 1994-95</font></td>
+			</tr>
+			<tr>
+				<td width="82" valign="top"><font face="Courier New">math:</font></td>
+				<td valign="top"><font face="Times New Roman">Average math SAT 
+		score, 1994-95</font></td>
+			</tr>
+			<tr>
+				<td width="82" valign="top"><font face="Courier New">total:</font></td>
+				<td valign="top"><font face="Times New Roman">Average total 
+		score on the SAT, 1994-95</font></td>
+			</tr>
+		</tbody></table>
+	</dl>
+	<font face="Times New Roman">Fit a model with the total SAT score (</font><font face="Courier New">total</font><font face="Times New Roman">) 
+	as the response and </font>
+	<font face="Courier New">expend</font><font face="Times New Roman">, </font>
+	<font face="Courier New">salary</font><font face="Times New Roman">, </font>
+	<font face="Courier New">ratio</font><font face="Times New Roman">, and </font>
+	<font face="Courier New">takers</font><font face="Times New Roman"> as 
+	predictors. Perform regression diagnostics on this model to answer the 
+	following questions. Display any plots that are relevant. Do not provide any 
+	plots about which you have nothing to say. </font>
+	<ol>
+		<li type="a"><font face="Times New Roman">Check the normality 
+		assumption.</font></li>
+		<li type="a"><font face="Times New Roman">Check for large leverage 
+		points.</font></li>
+		<li type="a"><font face="Times New Roman">Check for outliers.</font></li>
+		<li type="a"><font face="Times New Roman">Check for influential points.</font></li>
+		<li type="a"><font face="Times New Roman">Check the structure of the 
+		relationship between the predictors and the response.</font></li>
+	</ol>
+	</li>
+	<li><font face="Times New Roman"><a name="Problem 3"></a>The </font>
+	<font face="Courier New"><a href="http://www.stat.nthu.edu.tw/~swcheng/Teaching/stat5410/data/vehicle.txt">data</a></font><font face="Times New Roman"> 
+	for this question gives observations on the acceleration (</font><font face="Courier New">ACC</font><font face="Times New Roman">) of different vehicles 
+	along with their weight-to-horsepower ration (</font><font face="Courier New">WHP</font><font face="Times New Roman">), 
+	the speed at which they were traveling (</font><font face="Courier New">SP</font><font face="Times New Roman">), 
+	and the grade (</font><font face="Courier New">G</font><font face="Times New Roman">;
+	</font>
+	<font face="Courier New">G=0</font><font face="Times New Roman"> implies the 
+	road was horizontal).
+	</font>
+	<ol>
+		<li type="a"><font face="Times New Roman">Run a regression using </font>
+		<font face="Courier New">ACC</font><font face="Times New Roman"> as your 
+		dependent variable without making any transformations, and obtain the 
+		partial residual plots. </font></li>
+		<li type="a"><font face="Times New Roman">Obtain a good fitting model by 
+		making whatever changes you think are necessary. Obtain appropriate 
+		plots to verify that you have succeeded. </font></li>
+		<li type="a"><font face="Times New Roman">At least one of the partial 
+		residual plots in</font><font face="Courier New"> part a
+		</font><font face="Times New Roman">appears to show heteroscedascity (i.e., violation of var(<b>ε</b>)=σ<sup>2</sup><b><i>I</i></b>), 
+		. If you have been successful in 
+		</font><font face="Courier New">part b</font><font face="Times New Roman">, the appearance of any serious heteroscedascity should vanish without your having to weight or 
+		transform the dependent variable. Explain why you think this happens.
+		</font></li>
+	</ol>
+	</li>  
+</ol>
+
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+
+
+
+</body></html>
