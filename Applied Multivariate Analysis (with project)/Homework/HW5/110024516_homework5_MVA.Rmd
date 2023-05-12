@@ -1,0 +1,151 @@
+---
+title: "Applied Multivariate Analysis Homework 5"
+author: "110024516 邱繼賢"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1.2}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+## Problem 1.  
+Total inertia
+$$
+\phi^2\ =\ \sum_i\sum_j\frac{\left(p_{ij}-r_ic_j\right)^2}{r_ic_j}\ =\ tr\left(QQ'\right)\ =\ \text{sum of the eigen values}\ =\ 0.1287176
+$$
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library("FactoMineR")
+library(ggplot2)
+library("factoextra")
+data = read.csv("102年臺北10-18歲兒少問卷.csv")
+data1 = table(data$A3[data$B7 != 9], data$B7[data$B7 != 9])
+res.ca = CA(data1, graph = F)
+```
+
+```{r}
+sum(res.ca$eig[,1])
+```
+
+And the respective inertia for the first two coordinates are
+```{r}
+res.ca$eig[1:2,1]
+```
+
+
+The asymmetric plot with principal coordinates for A3 :  
+
+```{r echo=FALSE}
+fviz_ca_biplot(res.ca, map="rowprincipal", repel = T)
+```
+
+
+```{r echo=FALSE}
+row_profile = apply(data1, 1, function(x) {
+    x/sum(x)
+})
+mean_profile = apply(data1, 2, function(x) {
+    sum(x)/sum(data1)
+})
+round(rbind(t(row_profile), mean_profile), 3)
+```
+
+(1) 高中職的學生 ($A3\ =\ 7,8,9$) 明顯分成一群，和其他年級較低的學生相差較遠  
+(2) 高中職的學生 ($A3\ =\ 7,8,9$) 在運動時間較短 ($B7\ =\ 2,3$) 的 levels 所占比例高於 mean profile，可藉由觀察 $A3\ =\ 7,8,9$ 和原點相連所形成的向量跟 $B7\ =\ 2,3$ 和原點相連所形成的向量的夾角 $<\ 90$度得知。而年級較低的學生 ($A3\ =\ 1,2,4$) 在運動時間較長 ($B7\ =\ 4,5$) 的 levels 所占比例高於 mean profile，一樣可以藉由觀察向量夾角得知  
+(3) $A3\ =\ 3,5$ 的學生在圖形上很接近原點，故可以推測他們在各種運動時間的 level 上所佔比例和 mean profile 並沒有太大差距  
+
+
+
+
+\newpage
+## Problem 2.  
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(dplyr)
+library(psych)
+library(GPArotation)
+library(knitr)
+data2 = data[, c(88:97,167:185,186:205)]
+```
+
+### (1) PC method with varimax rotation  
+
+```{r echo=FALSE}
+pc.method.vari = principal(data2, nfactors = 3, rotate = 'varimax')
+pc.method.vari$loadings
+```
+
+
+### (2) PC method with quartimax rotation  
+
+```{r echo=FALSE}
+pc.method.quarti = principal(data2, nfactors = 3, rotate = "quartimax")
+pc.method.quarti$loadings
+```
+
+
+### PF method with varimax rotation  
+
+
+```{r echo=FALSE}
+pf.method.vari = fa(data2, nfactors = 3, rotate = "varimax", fm = "pa")
+pf.method.vari$loadings
+```
+
+
+### PF method with quartimax rotation  
+
+```{r echo=FALSE}
+pf.method.quarti = fa(data2, nfactors = 3, rotate = "quartimax", fm = "pa")
+pf.method.quarti$loadings
+```
+
+
+### MLE method with varimax rotation  
+
+```{r echo=FALSE}
+mle.method.vari = fa(data2, nfactors = 3, rotate = "varimax", fm = "ml")
+mle.method.vari$loadings
+```
+
+
+### MLE method with quartimax rotation  
+
+```{r echo=FALSE}
+mle.method.quarti = fa(data2, nfactors = 3, rotate = "quartimax", fm = "ml")
+mle.method.quarti$loadings
+```
+
+我們可以看到各種方式所做出的結果差異不大，基本上每個變數都只有三個 factors 中的一個的 loading 比較大，這是因為我們有進行 rotation 所造成的結果，接下來選取 MLE method with varimax rotation 來進一步觀察。  
+
+```{r echo=FALSE}
+f1 = mle.method.vari$loadings[,1]
+f2 = mle.method.vari$loadings[,2]
+f3 = mle.method.vari$loadings[,3]
+label = row.names(mle.method.vari$loadings)
+par(mfrow = c(1,3))
+plot(f1,f2, xlab = "Factor 1", ylab = "Factor 2") ; abline(h=0,v=0,col=2)
+plot(f1,f3, xlab = "Factor 1", ylab = "Factor 3") ; abline(h=0,v=0,col=2)
+plot(f2,f3, xlab = "Factor 2", ylab = "Factor 3") ; abline(h=0,v=0,col=2)
+# plot(f1,f2, type = "n", xlab = "Factor 1", ylab = "Factor 2")
+# text(f1,f2, label)
+# plot(f1,f3, type = "n", xlab = "Factor 1", ylab = "Factor 3")
+# text(f1,f3, label)
+# plot(f2,f3, type = "n", xlab = "Factor 2", ylab = "Factor 3")
+# text(f2,f3, label)
+```
+
+可以看出大部份的變數都落在三個 factors 各自的軸上，符合前面對於 loading 數值的描述，以下列出三個 Factors 對應到 loading 較大的變數各為哪些，並試著解釋出三個 Factor 各自可能代表的意義  
+
+(i) Factor 1 : C10_1 $\sim$ C10_10，這些變數都是一些不良且可能成癮的嗜好，Factor 1 可能代表著「不良嗜好傾向」  
+(ii) Factor 2 : C10_11 $\sim$ C10_20，這些變數都是一些跟家庭或同儕有關所造成的反社會行為，Factor 2 可能代表著「社會環境造成的不良影響」  
+(iii) Factor 3 : B10_3 $\sim$ B10_5 & C9，這些變數都是一些家庭或同儕所給予的正面回饋，Factor 3 可能代表著「社會環境所給予的正面影響」  
+
+
+
+
+
