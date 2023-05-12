@@ -1,0 +1,168 @@
+---
+title: "Statistical Computing Homework 4"
+author: "110024516 邱繼賢"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1.5}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+## Problem 1.  
+Assume that *waiting time* ($Y_i$) follows the mixture normal distribution as below
+$$
+Y_i\ \sim\ \tau\ N\left(\mu_1\ ,\ \sigma_1^2\right)\ +\ (1-\tau)\ N\left(\mu_2\ ,\ \sigma_2^2\right)
+$$
+can be represented as 
+$$
+\begin{aligned}
+Y_{i1}\ &\sim\ N\left(\mu_1\ ,\ \sigma_1^2\right)\ ;\ Y_{i2}\ \sim\ N\left(\mu_2\ ,\ \sigma_2^2\right)\ ,\\
+\Rightarrow\ Y_i\ &=\ \gamma_i\ Y_{i1}\ +\ (1-\gamma_i)\ Y_{i2}\ ,\ \gamma_i\ \overset{iid}{\sim}\ Ber(\tau)
+\end{aligned}
+$$
+thus we have to estimate the parameters : $\theta\ =\ \left(\tau\ ,\ \mu_1\ ,\ \sigma_1^2\ ,\ \mu_2\ ,\ \sigma_2^2\right)$  
+Log-likelihood based on the complete data : 
+$$
+\text{log}\ L\left(\theta\ |\ Y,\gamma\right)\ =\ \sum\limits_{i=1}^n\left\{\gamma_i\ \text{log}\ f\left(Y_i\ ;\ \mu_1,\sigma_1^2\right)\ +\ (1-\gamma_i)\ \text{log}\ f\left(Y_i\ ;\ \mu_2,\sigma_2^2\right)\right\}\ +\ \sum\limits_{i=1}^n\left\{\gamma_i\ \text{log}(\tau)\ +\ (1-\gamma_i)\ \text{log}(1-\tau)\right\}
+$$
+
+*\underline{EM Algorithm}* :  
+
+(1) compute
+$$
+\hat{\gamma}_i^{(t)}\ =\ E_{\hat{\theta}^{(t)}}\left[\gamma_i\ |\ Y_i\right]\ =\ \frac{\hat{\tau}^{(t)}\ f\left(Y_i\ ;\ \hat{\mu}_1^{(t)}\ ,\ \hat{\sigma}_1^{2(t)}\right)}{\hat{\tau}^{(t)}\ f\left(Y_i\ ;\ \hat{\mu}_1^{(t)}\ ,\ \hat{\sigma}_1^{2(t)}\right)\ +\ \left(1-\hat{\tau}^{(t)}\right)\ f\left(Y_i\ ;\ \hat{\mu}_2^{(t)}\ ,\ \hat{\sigma}_2^{2(t)}\right)}
+$$
+
+(2) E-step : 
+$$
+\begin{aligned}
+&Q\left(\theta\ |\ \hat{\theta}^{(t)}\right)\ =\ E_{\hat{\theta}^{(t)}}\left[\text{log}\ L\left(\theta\ |\ Y\ ,\ \hat{\gamma}^{(t)}\right)\ |\ Y\right]\\
+=\ &\sum\limits_{i=1}^n\left\{\hat{\gamma}_i^{(t)}\ \text{log}\ f\left(Y_i\ ;\ \mu_1,\sigma_1^2\right)\ +\ (1-\hat{\gamma}_i^{(t)})\ \text{log}\ f\left(Y_i\ ;\ \mu_2,\sigma_2^2\right)\right\}\ +\ \sum\limits_{i=1}^n\left\{\hat{\gamma}_i^{(t)}\ \text{log}(\tau)\ +\ (1-\hat{\gamma}_i^{(t)})\ \text{log}(1-\tau)\right\}
+\end{aligned}
+$$
+
+(3) M-step : $\hat{\theta}^{(t+1)}\ =\ \text{arg}\ max_{\theta}\ Q\left(\theta\ |\ \hat{\theta}^{(t)}\right)$
+$$
+\Rightarrow\ \left\{
+\begin{aligned}
+&\hat{\mu}_1^{(t+1)}\ =\ \frac{\sum_{i=1}^n\hat{\gamma}_i^{(t)}Y_i}{\sum_{i=1}^n\hat{\gamma}_i^{(t)}}\ \ ,\ \ \hat{\sigma}_1^{2(t+1)}\ =\ \frac{\sum_{i=1}^n\hat{\gamma}_i^{(t)}\left(Y_i-\hat{\mu}_1^{(t+1)}\right)^2}{\sum_{i=1}^n\hat{\gamma}_i^{(t)}}\\
+&\hat{\mu}_2^{(t+1)}\ =\ \frac{\sum_{i=1}^n\left(1-\hat{\gamma}_i^{(t)}\right)Y_i}{\sum_{i=1}^n\left(1-\hat{\gamma}_i^{(t)}\right)}\ \ ,\ \ \hat{\sigma}_2^{2(t+1)}\ =\ \frac{\sum_{i=1}^n\left(1-\hat{\gamma}_i^{(t)}\right)\left(Y_i-\hat{\mu}_2^{(t+1)}\right)^2}{\sum_{i=1}^n\left(1-\hat{\gamma}_i^{(t)}\right)}\\
+&\hat{\tau}^{(t+1)}\ =\ \frac{\sum_{i=1}^n\hat{\gamma}_i^{(t)}}{n}
+\end{aligned}
+\right.
+$$
+
+(4) Check convergence $||\hat{\theta}^{(t+1)}\ -\ \hat{\theta}^{(t)}||\ \rightarrow\ 0$
+
+Take initial parameter $\hat{\theta}^{(1)}\ =\ (0.5\ ,\ 30\ ,\ 1\ ,\ 60\ ,\ 1)$ for example, and iterate 100 times  
+
+Check the convergence of the five parameters :  
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(latex2exp)
+library(knitr)
+data("faithful")
+Y = faithful$waiting
+
+# give the initial parameter
+parameter = data.frame(tau = 1/2, mu_1 = 30, square_sig_1 = 1, 
+                  mu_2 = 60, square_sig_2 = 1)
+n.iter = 100
+
+compute_gamma = function(para) {
+    para = as.numeric(para)
+    tau = para[1]
+    mu1 = para[2]
+    sig1 = sqrt(para[3])
+    mu2 = para[4]
+    sig2 = sqrt(para[5])
+    a = tau*dnorm(Y,mu1,sig1)
+    b = a + (1-tau)*dnorm(Y,mu2,sig2)
+    return(a/b)
+}
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# iteration
+for (i in 1:n.iter) {
+    gamma = compute_gamma(parameter[i,])
+    mu1 = (sum(gamma*Y))/(sum(gamma))
+    square_sig1 = (sum(gamma*(Y-mu1)^2))/(sum(gamma))
+    mu2 = (sum((1-gamma)*Y))/(sum(1-gamma))
+    square_sig2 = (sum((1-gamma)*(Y-mu2)^2))/(sum(1-gamma))
+    tau = mean(gamma)
+    parameter[i+1,] = c(tau,mu1,square_sig1,mu2,square_sig2,mu2)
+}
+```
+
+
+```{r echo=FALSE}
+ts.plot(parameter[,1], lwd = 2, ylab = "tau")
+```
+
+$\hat{\tau}$ converges to a stable value after about 60th iteration  
+
+
+```{r echo=FALSE}
+ts.plot(parameter[,c(2,4)], lwd = 2, col = 1:2, ylab = "mean")
+legend("bottomright", legend = c(TeX("$\\mu_1$"), TeX("$\\mu_2$")), 
+       lwd = 2, col = 1:2)
+```
+
+$\left(\hat{\mu}_1\ ,\ \hat{\mu}_2\right)$ converge to two stable values after about 60th iteration  
+
+
+```{r echo=FALSE}
+ts.plot(parameter[,c(3,5)], lwd = 2, col = 1:2, ylab = "variance")
+legend("topright", legend = c(TeX("$\\sigma_1^2$"), TeX("$\\sigma_2^2$")), 
+       lwd = 2, col = 1:2)
+```
+
+$\left(\hat{\sigma}_1^2\ ,\ \hat{\sigma}_2^2\right)$ converge to two stable values after about 60th iteration  
+
+
+Let's see the final estimation of the parameters
+
+```{r echo=FALSE}
+kable(parameter[n.iter+1,], col.names = c("$\\hat{\\tau}$", "$\\hat{\\mu}_1$", "$\\hat{\\sigma}_1^2$", 
+                                          "$\\hat{\\mu}_2$", "$\\hat{\\sigma}_2^2$"), digits = 3)
+```
+
+Sketch the mixture pdf curve by the above parameters and compare to the histogram of *waiting time*
+
+```{r echo=FALSE}
+hist(Y, 20, probability = T, ylim = c(0,0.05), 
+     xlab = "waiting time", main = "mixture pdf")
+mix_pdf = function(y) {
+    tau = parameter[n.iter+1,1]
+    mu1 = parameter[n.iter+1,2]
+    sig1 = sqrt(parameter[n.iter+1,3])
+    mu2 = parameter[n.iter+1,4]
+    sig2 = sqrt(parameter[n.iter+1,5])
+    return(tau*dnorm(y,mu1,sig1)+(1-tau)*dnorm(y,mu2,sig2))
+}
+curve(mix_pdf, 40,100, col = 2, lwd = 2, add = T)
+box()
+```
+
+They fit pretty well!  
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
