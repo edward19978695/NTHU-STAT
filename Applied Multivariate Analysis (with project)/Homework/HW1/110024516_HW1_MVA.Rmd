@@ -1,0 +1,112 @@
+---
+title: "Applied Multivariate Analysis HW1"
+author: "110024516 統研碩一 邱繼賢"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r, include=FALSE}
+# data("diamonds")
+# data = diamonds
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+
+本次作業使用 R 套件 ggplot2 中內建資料 *mpg*，此數據為 EPA 在 https://fueleconomy.gov/ 上所提供關於燃油經濟性數據的一個子集，包含了 1999 年和 2008 年發布的新版本車型，共 234 筆觀測值，11 個變數。
+
+
+### Variables
+
+| **變數名稱**     | **變數類型**                  | **變數解釋**                                                          |   |   |   |   |   |   |   |
+|--------------|---------------------------|-------------------------------------------------------------------|---|---|---|---|---|---|---|
+| manufacturer | qualitative (nominal)     | 製造商名稱                                                             |   |   |   |   |   |   |   |
+| model        | qualitative (nominal)     | 車型名稱                                                              |   |   |   |   |   |   |   |
+| displ        | quantitative (continuous) | 發電機排量 (engine displacement) 單位：升                                  |   |   |   |   |   |   |   |
+| year         | quantitative (discrete)   | 製造年份 (1999, 2008)                                                 |   |   |   |   |   |   |   |
+| cyl          | quantitative (discrete)   | 汽缸數量                                                              |   |   |   |   |   |   |   |
+| trans        | qualitative (nominal)     | 傳輸類型                                                              |   |   |   |   |   |   |   |
+| drv          | qualitative (nominal)     | 傳動系統類型 (f=front-wheel drive, r=rear-wheel drive, 4=4-wheel drive) |   |   |   |   |   |   |   |
+| cty          | quantitative (continuous) | 每加侖城市英哩數                                                          |   |   |   |   |   |   |   |
+| hwy          | quantitative (continuous) | 每加侖公路英哩數                                                          |   |   |   |   |   |   |   |
+| fl           | qualitative (nominal)     | 汽油種類                                                              |   |   |   |   |   |   |   |
+| class        | qualitative (nominal)     | 汽車的類型                                                             |   |   |   |   |   |   |   |
+
+
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+
+### Chart A (Scatter plot)
+
+
+```{r}
+library(ggplot2)
+data("mpg")
+ggplot(mpg) + 
+    geom_point(mapping = aes(cty,hwy, color = drv)) + 
+    labs(x = "city miles per gallon (cty)", y = "highway miles per gallon (hwy)")
+```
+
+
+### Interpretation A
+
+1. *cty* 和 *hwy* 呈現明顯正相關，且相同汽車下 *hwy* 數值皆大於 *cty*。  
+
+2. 四輪驅動的汽車 *cty* 和 *hwy* 分佈皆偏低，其次為後輪驅動，前輪驅動分佈則偏高。
+
+
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart B (Box plot)
+
+```{r}
+ggplot(mpg) + 
+    geom_boxplot(mapping = aes(x = drv, y=displ, fill = factor(year))) + 
+    guides(fill=guide_legend(title="year")) + 
+    labs(x = "the type of drive train (drv)", y = "engine displacement (displ)")
+```
+
+
+### Interpretation B
+
+1. 2008 年生產的汽車發電機排放量分佈約略大於 1999 年生產的，但圖形顯示上並不是太顯著。  
+
+2. 三種傳動系統類型的汽車中，後輪驅動的汽車發電機排放量最大，其次為四輪驅動，前輪驅動則最低。
+
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+
+### Chart C (Interaction plot)
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+mpg2 = mpg %>% group_by(drv, cyl) %>% 
+    summarise(displ_avg = mean(displ)) %>% 
+    ungroup()
+
+ggplot(mpg2) + 
+    aes(x = cyl, y = displ_avg, color = drv) + 
+    geom_point() + 
+    geom_line() + 
+    labs(x = "number of cylinders (cyl)", y = "average engine displacement")
+```
+
+
+### Interpretation C
+
+1. 隨著汽缸數的增加，三種傳動系統類型的汽車的發電機排放量平均值皆隨之上升。  
+
+2. 四輪驅動和後輪驅動所代表的折線大致呈現平行，但前輪驅動的折線則和他們不平行，甚至有相交，故可以推測變數*cyl* 和 *drv* 之間有著交互作用。
+
+
+
+
