@@ -1,0 +1,306 @@
+---
+title: "Experimental Design and Analysis 4"
+author: "110024516 邱繼賢"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1.5}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+
+
+## Problem 1. (3.1)  
+建構模型
+$$
+\text{weight}_{ij}\ =\ \eta\ +\ \alpha_i\ +\ \tau_j\ +\ \epsilon_{ij}\ \ ,\ \ \epsilon_{ij}\ \sim\ N(0,\sigma^2)\ \ ,\ \ i=1,...,6\ \ ,\ \ j=1,2
+$$
+where $\alpha_i$ is the block (lake) effect, and $\tau_j$ is the treatment (scale) effect  
+
+Our data matrix : 
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(knitr)
+rock = data.frame(lake = as.factor(c(1,2,3,4,5,6,1,2,3,4,5,6)), 
+                  scale = as.factor(c(1,1,1,1,1,1,2,2,2,2,2,2)), 
+                  weight = c(8,14,16,19,18,12,11,16,20,18,20,15))
+kable(rock, col.names = c("lack(i)","scale(j)","weight(ij)"))
+```
+
+### (a)  
+Compute the within block difference $d_i\ =\ \text{weight}_{i1}\ -\ \text{weight}_{i2}\ =\ \{-3,-2,-4,1,-2,-3\}$, and do the paired t test
+$$
+\left\{
+\begin{aligned}
+H_0\ :\ \mu_d\ =\ 0\\
+H_1\ :\ \mu_d\ \neq\ 0
+\end{aligned}
+\right.
+$$
+test statistic
+$$
+t_{\text{paired}}\ =\ \frac{\overline{d}}{s_d/\sqrt{N}}\ =\ \frac{-2.166667}{1.722401/\sqrt{6}}\ =\ -3.081297
+$$
+
+
+### (b)  
+$\text{p-value}\ =\ 2\times P\left(t_{N-1}\ >\ |-3.081297|\right)\ =\ 0.02742918\ <\ 0.05$  
+$\Rightarrow$ Reject $H_0$, so the two scales are significant different  
+
+We can check the answer by the ANOVA table
+```{r}
+fit1 = lm(weight ~ lake + scale, rock)
+anova(fit1)
+```
+
+$\Rightarrow$ p-value (0.027429) are the same  
+
+
+
+## Problem 2. (3.9)  
+### (1) Paired comparison design  
+因為某些 latent variables 像是年齡、性別、體重...等身體狀況的不同皆可能影響血壓，所以在尋找受試者時盡量將 latent variables 相似的兩位受試者分為一組 (ex：雙胞胎)，即為一個 block，然後將一劑藥物 A 和一劑安慰劑隨機分配給同一組的兩位受試者 (可採取雙盲實驗)，然後紀錄兩小時內的血壓變化並計算同一組 block 內的差距，這樣即可以消除不同 block 所帶來的血壓變異，也就是所謂的 Paired t test (如**3.1**)  
+
+
+### (2) Unpaired design  
+但其實上述的方法非常的不切實際，要同時找到那麼多組 latent variables 相似的受試者非常不容易，unpaired 的方法就是直接將所有受試者「隨機」的平均分配成兩組，一組施打藥物 A 一組施打安慰劑 (同樣採取雙盲實驗)，然後記錄這兩組受試者兩小時內的血壓變化，分別計算平均數 ($\overline{y}_1\ ,\ \overline{y}_2$) 和變異數 ($s^2_1\ ,\ s^2_2$)，然後進行 Unpaired t test，這樣的方法雖然沒辦法消除受試者之間的變異，但由於我們分組時是採用「隨機」的方式，可以一定程度的減少其所帶來的影響，另外可以考慮降低所有受試者之間的差異 (ex：同一間療養院的長者、同一間學校的學生)，也可以一定程度提升實驗的精準度。  
+$$
+t_{\text{unpaired}}\ =\ \frac{\overline{y}_2-\overline{y}_1}{\sqrt{s^2_2/N+s^2_1/N}}\ \sim\ t_{2N-2}
+$$
+
+
+## Problem 3. (3.13)  
+因為變數 *power, log(speed)* 皆大致為 three evenly spaced levels，定義各自的 linear and quadratic contrast
+$$
+\text{power}_l\ =\ \left\{
+\begin{aligned}
+-1/\sqrt{2}\ ,\ \text{power}\ =\ 40\\
+0\ ,\ \text{power}\ =\ 50\\
+1/\sqrt{2}\ ,\ \text{power}\ =\ 60
+\end{aligned}
+\right.\ \ ,\ \ 
+\text{power}_q\ =\ \left\{
+\begin{aligned}
+1/\sqrt{6}\ ,\ &\text{power}\ =\ 40\ \text{or}\ 60\\
+-2/\sqrt{6}\ ,\ &\text{power}\ =\ 50
+\end{aligned}
+\right.
+$$
+
+$$
+\text{log-speed}_l\ =\ \left\{
+\begin{aligned}
+-1/\sqrt{2}\ ,\ &\text{speed}\ =\ 6.42\\
+0\ ,\ &\text{speed}\ =\ 13\\
+1/\sqrt{2}\ ,\ &\text{speed}\ =\ 27
+\end{aligned}
+\right.\ \ ,\ \ 
+\text{log-speed}_q\ =\ \left\{
+\begin{aligned}
+1/\sqrt{6}\ ,\ &\text{speed}\ =\ 6.42\ \text{or}\ 27\\
+-2/\sqrt{6}\ ,\ &\text{speed}\ =\ 13
+\end{aligned}
+\right.
+$$
+
+建構模型
+$$
+\text{strength}\ \sim\ \text{power}_l\ +\ \text{power}_q\ +\ \text{log-speed}_l\ +\ \text{log-speed}_q\ +\ \text{power}_l:\text{log-speed}_l
+$$
+因為資料為 single replicate，沒有足夠的 degree of freedom 分配給所有的交互作用項，故模型只選擇放入 $\text{power}_l:\text{log-speed}_l$ 兩個 linear contrast 之間的交互作用，其餘有包含 quadratic contrast 之間的交互作用項則不放入模型
+
+```{r}
+composite = read.table("Composite.txt", header = T)
+composite = composite %>% 
+    mutate(power.l = c(-1,-1,-1,0,0,0,1,1,1)/sqrt(2), 
+           power.q = c(1,1,1,-2,-2,-2,1,1,1)/sqrt(6), 
+           log_speed.l = c(-1,0,1,-1,0,1,-1,0,1)/sqrt(2), 
+           log_speed.q = c(1,-2,1,1,-2,1,1,-2,1)/sqrt(6))
+fit3.1 = lm(strength ~ power.l+power.q+log_speed.l+log_speed.q+power.l:log_speed.l, composite)
+summary(fit3.1)
+```
+
++ $\text{power}_q$ 對模型貢獻不顯著，故刪除該變數  
++ $\text{log-speed}_l$ 雖然對模型貢獻不顯著，但是 $\text{log-speed}_q$ 結果為顯著，故兩項皆保留  
++ $\text{power}_l:\text{log-speed}_l$ 對模型貢獻不顯著，故刪除該變數  
+
+重新配飾模型
+$$
+\text{strength}\ \sim\ \text{power}_l\ +\ \text{log-speed}_l\ +\ \text{log-speed}_q
+$$
+
+```{r}
+fit3.2 = update(fit3.1, .~.-power.q-power.l:log_speed.l)
+summary(fit3.2)
+```
+
+$\Rightarrow$ 變數 $\text{power}_l$ 和 $\text{log-speed}_q$ 皆呈現顯著  
+
+模型估計係數如下
+$$
+\hat{\text{strength}}\ =\ 31.032\ +\ 8.636\ \text{power}_l\ -\ 1.046\ \text{log-speed}_l\ -\ 3.9\ \text{log-speed}_q
+$$
+
+觀察其 ANOVA table
+
+```{r}
+anova(fit3.2)
+```
+
+$\Rightarrow$ 結果和上面做回歸分析所得結果一致 (look at the p-value)  
+
+對此模型做 diagnostic
+
+```{r}
+par(mfrow = c(2,2))
+plot(fit3.2)
+```
+
+$\Rightarrow$ 並沒有出現明顯的 outlier，QQ plot 也顯示 residual 接近 normal distribution  
+
+以 studentized residual 對 fitted value 以及各變數繪製 residual plots  
+
+```{r}
+par(mfrow = c(2,2))
+res = rstandard(fit3.2)
+plot(fit3.2$fitted.values,res, xlab="fitted value",ylab="residual") ; abline(h=0, col=2, lwd=2)
+plot(composite$power.l, res, xlab="power.l",ylab="residual") ; abline(h=0, col=2, lwd=2)
+plot(composite$log_speed.l, res, xlab="log(speed).l",ylab="residual") ; abline(h=0, col=2, lwd=2)
+plot(composite$log_speed.q, res, xlab="log(speed).q",ylab="residual") ; abline(h=0, col=2, lwd=2)
+```
+
+$\Rightarrow$ 大致呈現正常，沒有出現明顯的 non-constant variance 或是 mean curvature  
+
+接下來將變數 *power* 和 *log(speed)* 視為 3 levels qualitative variables，建構模型
+$$
+\text{strength}_{ij}\ =\ \eta\ +\ \text{power}_i\ +\ \text{log-speed}_j\ +\ \epsilon_{ij}\ \ ,\ \ i,j=1,2,3\ \ ,\ \ \epsilon_{ij}\ \sim\ N(0,\sigma^2)
+$$
+觀察其 ANOVA table
+
+```{r}
+composite$power = as.factor(composite$power)
+composite$log_speed = as.factor(log(composite$speed))
+fit3.3 = lm(strength ~ power + log_speed, composite)
+anova(fit3.3)
+```
+
+$\Rightarrow$ 變數 *power* 和 *log(speed)* 皆呈現顯著，與前一個模型結果一致  
+
+一樣對此模型做 diagnostic
+
+```{r}
+par(mfrow = c(2,2))
+plot(fit3.3)
+```
+
+$\Rightarrow$ 並沒有出現明顯的 outlier，QQ plot 也顯示 residual 接近 normal distribution  
+
+以 studentized residuals 對 fitted values 以及兩個 treatments 繪製 residual plots  
+
+```{r}
+par(mfrow = c(2,2))
+res = rstudent(fit3.3)
+plot(fit3.3$fitted.values, res, xlab="fitted value",ylab="residual") ; abline(h = 0, col = 2, lwd = 2)
+plot(composite$power, res, xlab="power",ylab="residual")
+plot(composite$log_speed, res, xlab="log(speed)",ylab="residual")
+```
+
+$\Rightarrow$ 看起來有一點 non-constant variance 的現象，但我們每個 treatment 的 3 個 levels 下只有三次實驗值，可以再增加實驗 replication 的次數後，若依舊呈現此現象，則可以考慮對反應變數做 tranformation 或是用 weighted leasted square 的方式來估計回歸係數。  
+
+
+
+
+
+
+
+
+## Problem 4. (3.28)  
+Show the data matrix as below
+
+```{r}
+resistor = data.frame(plate = as.factor(c(1,1,1,2,2,2,3,3,3,4,4,4)), 
+                      shape = as.factor(c("A","C","D","A","B","D","A","B","C","B","C","D")), 
+                      noise = c(1.11,0.95,0.82,1.7,1.22,0.97,1.6,1.11,1.52,1.22,1.54,1.18))
+kable(resistor, col.names = c("plate","shape", "noise"))
+```
+
+### (a)  
+Because each pair of treatments appear in the same number ($\lambda\ =\ 2$) of blocks, it is a Balanced Incomplete Block Design (BIBD).  
+
+We have $t=4$ treatments (shape), $b=4$ blocks (plate) of size $k=3$, each treatment replicated $r=3$ times.  
+
+### (b)  
+建構模型
+$$
+\text{noise}_{ij}\ =\ \eta\ +\ \alpha_i\ +\ \tau_j\ +\ \epsilon_{ij}\ \ ,\ \ \epsilon_{ij}\ \sim\ N(0,\sigma^2)
+$$
+where $\alpha_i$ is the block (plate) effect with $i=1,2,3,4$, and $\tau_j$ is the treatment (shape) effect with $j=A,B,C,D$  
+
+觀察模型的 ANOVA table
+
+```{r}
+out = aov(noise ~ plate + shape, resistor)
+summary(out)
+```
+
+$\Rightarrow$ shape 的 p-value 呈現顯著，代表不同的形狀對噪音的影響有著顯著差距  
+
+接下來用 Tukey method 進行多重比較  
+
+```{r message=FALSE, warning=FALSE}
+library(multcomp)
+fitT = glht(out, linfct = mcp(shape = "Tukey"))
+summary(fitT)
+```
+
+$\Rightarrow$ (A,B) 和 (A,D) 這兩對組合皆有顯著差異  
+
+
+
+
+
+## Problem 5. (3.35)  
+建構模型
+$$
+y_{ijlm}\ =\ \eta\ +\ \text{day}_i\ +\ \text{operator}_j\ +\ \text{machine}_l\ +\ \text{method}_m\ +\ \epsilon_{ijlm}\ \ ,\ \ \epsilon_{ijlm}\ \sim N(0,\sigma^2)
+$$
+where $\text{day}_i\ ,\ \text{operator}_j\ ,\ \text{machine}_l$ are block effects with $i,j=1,...,5\ ,\ l=\alpha,\beta,\gamma,\delta,\epsilon$, and $\text{method}_m$ is treatment effect with $m=A,B,C,D,E$  
+
+觀察模型的 ANOVA table
+
+```{r}
+assembly = read.table("assemblymethod.TXT", header = T)
+assembly$Day = as.factor(assembly$Day)
+assembly$Operator = as.factor(assembly$Operator)
+fit5 = lm(Throughput ~ Day+Operator+Machine+Method, assembly)
+anova(fit5)
+```
+
+$\Rightarrow$ treatment effect $\text{method}_m$ 呈現顯著，代表使用不同的方法對反應變數 throughput 所造成的影響有顯著差異  
+
+再進一步觀察模型中係數的數值  
+
+```{r}
+summary(fit5)
+```
+
+可以發現只有 effect $\text{method}_B\ ,\ \text{method}_C\ ,\ \text{method}_D\ ,\ \text{method}_E$ 有估計值，代表此模型有著 $\text{method}_A\ =\ 0$ 的 baseline constraint，此時其餘四者的估計值代表著使用不同 method 時和使用 method A 時，反應變數平均的差距，可以得到以下關係式
+$$
+\left\{
+\begin{aligned}
+&\overline{y}_{11\alpha B}\ -\ \overline{y}_{11\alpha A}\ =\ 11.6\\
+&\overline{y}_{11\alpha C}\ -\ \overline{y}_{11\alpha A}\ =\ -4\\
+&\overline{y}_{11\alpha D}\ -\ \overline{y}_{11\alpha A}\ =\ 25.4\\
+&\overline{y}_{11\alpha E}\ -\ \overline{y}_{11\alpha A}\ =\ 16
+\end{aligned}
+\right.\ \ \Rightarrow\ \ 
+\overline{y}_{11\alpha D}\ >\ \overline{y}_{11\alpha E}\ >\ \overline{y}_{11\alpha B}\ >\ \overline{y}_{11\alpha A}\ >\ \overline{y}_{11\alpha C}
+$$
+
+所以使用 method D 會明顯優於其他 method
+
+
+
