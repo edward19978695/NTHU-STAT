@@ -1,0 +1,237 @@
+---
+title: "Linear Model Assignment 4"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+    number_sections: true
+author: "110024516 統研碩一 邱繼賢"
+date: "2021 年 11 月 14 日"
+---
+\textbf{Problem 1.}  
+Construct the full model:\[y\ =\ \beta_0+\beta_1x_1+\beta_2x_2+\beta_3x_3+\beta_4x_4+\beta_5x_5+\epsilon\]
+```{r}
+data = read.table("wastes.txt", skip = 1)
+names(data) = c("day", "x1", "x2", "x3", "x4", "x5", "y")
+g = lm(y ~ x1+x2+x3+x4+x5, data = data)
+```
+
+\textbf{a.}  
+\[
+CI\ =\ \left\{
+\begin{aligned}
+(\hat{\beta}_3-t_{(0.025,14)}\ se_{\hat{\beta_3}}\ ,\ \hat{\beta}_3+t_{(0.025,14)}\ se_{\hat{\beta_3}})\\
+(\hat{\beta}_5-t_{(0.025,14)}\ se_{\hat{\beta_5}}\ ,\ \hat{\beta}_5+t_{(0.025,14)}\ se_{\hat{\beta_5}})\\
+\end{aligned}
+\right.
+\]
+The results are shown as below:
+```{r}
+confint(g)[c(4,6),]
+```
+
+\textbf{b.}  
+\[
+\begin{aligned}
+&CI\ =\ ((\hat{\beta}_3+2\ \hat{\beta}_5)-t_{(0.025,14)}\ se_{\hat{\beta}_3+2\ \hat{\beta}_5}\ ,\ (\hat{\beta}_3+2\ \hat{\beta}_5)+t_{(0.025,14)}\ se_{\hat{\beta}_3+2\ \hat{\beta}_5})\\
+&where\ \ se_{\hat{\beta}_3+2\ \hat{\beta}_5}\ =\ \sqrt{\hat{var}(\hat{\beta}_3)+2^2\ \hat{var}(\hat{\beta}_5)+4\ \hat{cov}(\hat{\beta}_3\ ,\ \hat{\beta}_5)}\ ,\ and\ \ \hat{cov}(\hat{\beta}_i\ ,\ \hat{\beta}_j)\ =\ (X^TX)^{-1}_{ij}\ \hat{\sigma}^2
+\end{aligned}
+\]
+The result is shown as below:
+```{r}
+x = model.matrix(g)
+xtxi = solve(t(x) %*% x)
+sigma = summary(g)$sig
+sd_error = sqrt(xtxi[4,4]*sigma^2+4*xtxi[6,6]*sigma^2+4*xtxi[4,6]*sigma^2)
+estimate = g$coe[4]+2*g$coe[6]
+CI = c(estimate-qt(0.975, g$df)*sd_error, estimate+qt(0.975, g$df)*sd_error)
+names(CI) = c("Lower Bound", "Upper Bound")
+CI
+```
+
+\textbf{c.}  
+\[
+\left\{
+\begin{aligned}
+&H_0:\beta_3\ =\ \beta_5\ =\ 0\\
+&H_1:at\ \ least\ \ one\ \ of\ \ \beta_3\ \ or\ \ \beta_5\ \ \neq\ 0
+\end{aligned}
+\right.
+\]
+```{r warning=FALSE}
+library(ellipse)
+plot(ellipse(g, c(4,6)), lwd = 3, type = "l")
+points(0,0, cex = 1.5, pch = 15)
+abline(v=c(confint(g)[4,1], confint(g)[4,2]),lwd=3,lty=2)
+abline(h=c(confint(g)[6,1], confint(g)[6,2]),lwd=3,lty=2)
+```
+From the above ellipse, the origin is in that ellipse, means $fail\ \ to\ \ reject\ \ H_0$. Therefore, we do not have enough evidence to show that at least one of $\beta_3$ or $\beta_5\ \neq\ 0$ as $x_1\ ,\ x_2\ ,\ x_4$ are in the model.
+
+
+\textbf{d.}  
+探討$(\beta_1.\beta_2,\beta_3,\beta_4,\beta_5)$所建構的$95\%$聯合信賴區間是否包含$(0,0,0,0,0)$，同等於在$5\%$顯著水準下做以下假設檢定：
+\[
+\left\{
+\begin{aligned}
+&H_0:\beta_1=\beta_2=\beta_3=\beta_4=\beta_5=0\\
+&H_1:at\ least\ one\ \beta_i\ \neq\ 0\ ,\ i\ =\ 1,...,5
+\end{aligned}
+\right.
+\]
+即為進行 full model 的 full test：
+```{r}
+summary(g)
+```
+$\because\ p-value\ =\ 0.0001184\ <\ 0.05\ \Rightarrow\ reject\ H_0$
+
+$\therefore$ the origin $(0,0,0,0,0)$ would lie inside the $95\%$ confidence region for $(\beta_1,\beta_2,\beta_3,\beta_4,\beta_5)$
+
+
+\textbf{e.}  
+檢定非揮發性固體$(x_3-x_4)$對於反映變數是否有線性效應，即判斷模型
+$$y=\beta_0+\beta_1\ x_1+\beta_2\ x_2+\beta_3^*\ (x_3-x_4)+\beta_4^*\ x_4+\beta_5\ x_5+\epsilon$$中係數$\beta_3^*$是否為$0$，而該模型可從原 full model 移項得到
+$$y=\beta_0+\beta_1\ x_1+\beta_2\ x_2+\beta_3\ (x_3-x_4)+(\beta_3+\beta_4)\ x_4+\beta_5\ x_5+\epsilon$$從此模型可得知，本題所求即為在 full model 下做以下假設檢定
+\[
+\left\{
+\begin{aligned}
+&H_0:\beta_3\ =\ 0\\
+&H_1:\beta_3\ \neq\ 0
+\end{aligned}
+\right.
+\]
+而a.小題中$\beta_3$的信賴區間有包含$0$，所以 fail to reject $H_0$
+
+$\Rightarrow$ We do not have enough evidence to show that non-volatile solids have linear effect on the response under the full model.
+
+
+
+
+\textbf{Problem 2.}  
+\textbf{a.}  
+Construct the full model:
+\[lqsa\ =\ \beta_0+\beta_1\ lcavol+\beta_2\ lweight+\beta_3\ age+\beta_4\ lbph+\beta_5\ svi+\beta_6\ lcp+\beta_7\ gleason+\beta_8\ pgg45+\epsilon\]
+```{r}
+data2 = read.table("prostate.txt", header = T)
+g2 = lm(lpsa ~ lcavol+lweight+age+lbph+svi+lcp+gleason+pgg45, data = data2)
+```
+
+\textbf{i.}  
+\[
+\left\{
+\begin{aligned}
+&90\%\ CI\ =\ (\hat{\beta}_3-t_{(0.05,88)}\ se_{\hat{\beta}_3}\ ,\ \hat{\beta}_3+t_{(0.05,88)}\ se_{\hat{\beta}_3})\\
+&95\%\ CI\ =\ (\hat{\beta}_3-t_{(0.025,88)}\ se_{\hat{\beta}_3}\ ,\ \hat{\beta}_3+t_{(0.025,88)}\ se_{\hat{\beta}_3})
+\end{aligned}
+\right.
+\]
+The results are shown as below:
+```{r}
+confint(g2, level = 0.9)[4,]
+confint(g2)[4,]
+summary(g2)$coe[4,]
+```
+$age$的$90\%\ CI$並沒有包含$0$，但$95\%\  CI$則有包含$0$，可由此推得$0.05<p-value<0.1$，觀察$regression\ summary$報表所呈現的$p-value=0.08229321$的確符合該條件。
+
+
+\textbf{ii.}  
+\[
+\begin{aligned}
+&\text{Let}\ X_0\ =\ (1.44692,3.62301,65,0.3001,0,-0.79851,7,15)^T\ ,\ \text{and}\ \beta\ =\ (\hat{\beta}_1,\hat{\beta}_2,\hat{\beta}_3,\hat{\beta}_4,\hat{\beta}_5,\hat{\beta}_6,\hat{\beta}_7,\hat{\beta}_8)^T\\
+&\text{then the predicted value}\ Y_0\ =\ X_0^T\ \beta\ =\ 2.389053\\
+&\text{the standard error of the predicted value}\ se_{Y_0}\ =\ \sqrt{1+X_0^T(X^TX)^{-1}X_0}\ \hat{\sigma}\\
+&\therefore\ \text{The}\ 95\%\ CI\ =\ (Y_0-t_{(0.025,88)}\ se_{Y_0}\ ,\ Y_0+t_{(0.025,88)}\ se_{Y_0})
+\end{aligned}
+\]
+The result is shown as below:
+```{r}
+df = data.frame(lcavol = 1.44692,
+                lweight = 3.62301,
+                age = 65, 
+                lbph = 0.3001, 
+                svi = 0, 
+                lcp = -0.79851, 
+                gleason = 7, 
+                pgg45 = 15)
+predict(g2, df, interval = "prediction")
+```
+
+\textbf{iii.}  
+Now, the observation has been changed into $X_1\ =\ (1.44692,3.62301,20,0.3001,0,-0.79851,7,15)^T$, and then do the same calculation as above to attain the $95\%\ CI$.
+
+The result is been shown as below:
+```{r}
+df2 = data.frame(lcavol = 1.44692,
+                lweight = 3.62301,
+                age = 20, 
+                lbph = 0.3001, 
+                svi = 0, 
+                lcp = -0.79851, 
+                gleason = 7, 
+                pgg45 = 15)
+predict(g2, df2, interval = "prediction")
+```
+因為$age$變數數據全部都落在$41$~$79$的區間之中，所以$age=20$為外插(extrapolation)的資料，在根據此筆數據做估計時，誤差範圍(即信賴區間寬度)就會變得較寬。
+
+
+\textbf{b.}  
+Construct the reduced model:
+\[lqsa\ =\ \beta_0+\beta_1\ lcavol+\beta_2\ lweight+\beta_5\ svi+\epsilon\]
+```{r}
+g3 = lm(lpsa ~ lcavol+lweight+svi, data = data2)
+```
+
+
+\textbf{i.}  
+Use the same method to calculate the prediction and the confidence interval.
+```{r}
+df3 = data.frame(lcavol = 1.44692,
+                 lweight = 3.62301,
+                 svi = 0)
+predict(g3, df3, interval = "prediction")
+```
+計算出來的估計值與 part a 差異不大，信賴區間的寬度也只有稍微寬於 part a 所計算出的寬度。
+
+我會更傾向於選擇 part b 的模型，因為使用較少的變數，即代表在時間和金錢上的成本花費較少，而且在此題的情況下，計算出的預測值和信賴區間都沒有太大的差異。
+
+
+
+\textbf{ii.}  
+\[
+\left\{
+\begin{aligned}
+&H_0:reduced\ model\ fits\ better\\
+&H_1:full\ model\ fits\ better
+\end{aligned}
+\right.
+\Longleftrightarrow
+\left\{
+\begin{aligned}
+&H_0:\beta_3=\beta_4=\beta_6=\beta_7=\beta_8\\
+&H_1:at\ least\ one\ \beta_i\ \neq\ 0\ ,\ i=3,4,6,7,8
+\end{aligned}
+\right.
+\]
+```{r}
+anova(g3, g2)
+```
+$\because\ p-value\ =\ 0.2167\ >\ 0.05\ \Rightarrow\ fail\ to\ reject\ H_0$
+
+$\therefore$ We do not have enough evidence to show that the full model fits better than reduced model. The reduced model is prefered.
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+

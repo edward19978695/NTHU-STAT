@@ -1,0 +1,219 @@
+
+<!-- saved from url=(0082)http://www.stat.nthu.edu.tw/~swcheng/Teaching/stat5410/assignment/assignment4.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=Big5">
+<meta http-equiv="Content-Language" content="zh-tw">
+
+<meta name="GENERATOR" content="Microsoft FrontPage 6.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>NTHU STAT 5410 - Assignment 4</title>
+<style type="text/css">
+.style28 {
+	color: #000000;
+}
+</style>
+</head>
+
+<body>
+
+<h1><font face="Times New Roman"><b>Assignment <span lang="en-us">4</span></b></font></h1>
+<ol>
+	<li>
+	<p class="MsoNormal" style="text-align: justify; line-height: 24px; margin-top: 0px; margin-bottom: 0px;">
+	<span lang="EN-US">
+	<font face="Times New Roman"><a name="Problem 1"></a>Moore (1975) reported the 
+	results of an experiment to construct a model for total oxygen demand in 
+	dairy wastes as a function of five laboratory measurements (</font><font face="Courier New"><a href="http://www.stat.nthu.edu.tw/~swcheng/Teaching/stat5410/data/wastes.txt">data</a></font><font face="Times New Roman">). 
+	Data were collected on samples kept in suspension in water in a laboratory 
+	for 220 days. Although all observations reported here were taken on the same 
+	sample over time, assume that they are independent. The measured variables 
+	are:</font></span></p></li>
+</ol>
+<blockquote>
+	<p class="MsoNormal" style="text-align: justify; line-height: 24px; margin-top: 0px; margin-bottom: 0px;">
+	<i><font face="Courier New"><span lang="EN-US">&nbsp;&nbsp;&nbsp; </span>
+	</font></i><span lang="EN-US"><font face="Courier New">y : log (oxygen 
+	demand, mg oxygen per minute)</font></span></p>
+	<p class="MsoNormal" style="text-align: justify; line-height: 24px; margin-top: 0px; margin-bottom: 0px;">
+	<i><font face="Courier New"><span lang="EN-US">&nbsp;&nbsp;&nbsp; </span>
+	</font></i><span lang="EN-US"><font face="Courier New">x1 :</font></span><font face="Courier New"><sub><span lang="EN-US" style="font-family: Times;">
+	</span></sub></font><span lang="EN-US"><font face="Courier New">biological 
+	oxygen demand, mg/liter</font></span></p>
+	<p class="MsoNormal" style="text-align: justify; line-height: 24px; margin-top: 0px; margin-bottom: 0px;">
+	<i><font face="Courier New"><span lang="EN-US">&nbsp;&nbsp;&nbsp; </span>
+	</font></i><span lang="EN-US"><font face="Courier New">x2 : </font></span>
+	<font face="Courier New"><span lang="EN-US">total Kjeldahl nitrogen, 
+	mg/liter</span></font></p>
+	<p class="MsoNormal" style="text-align: justify; line-height: 24px; margin-top: 0px; margin-bottom: 0px;">
+	<i><font face="Courier New"><span lang="EN-US">&nbsp;&nbsp;&nbsp; </span>
+	</font></i><span lang="EN-US"><font face="Courier New">x3 : </font></span>
+	<font face="Courier New"><span lang="EN-US">total solids, mg/liter</span></font></p>
+	<p class="MsoNormal" style="text-align: justify; line-height: 24px; margin-top: 0px; margin-bottom: 0px;">
+	<span lang="EN-US"><font face="Courier New"><i>&nbsp;&nbsp;&nbsp; </i>x4 : 
+	total volatile solids, a component of&nbsp;x3</font></span><font face="Courier New"><span lang="EN-US">, 
+	mg/liter</span></font></p>
+	<p class="MsoNormal" style="text-align: justify; line-height: 24px; margin-top: 0px; margin-bottom: 0px;">
+	<i><font face="Courier New"><span lang="EN-US">&nbsp;&nbsp;&nbsp; </span>
+	</font></i><span lang="EN-US"><font face="Courier New">x5 : </font></span>
+	<font face="Courier New"><span lang="EN-US">chemical oxygen demand, mg/liter</span></font></p>
+</blockquote>
+<blockquote>
+  <p class="MsoNormal">
+	<span lang="EN-US" style="color: rgb(0, 0, 0); font-family: Times New Roman; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial">
+	Fit a multiple regression model</span><font face="Courier New"><span lang="EN-US" style="color: rgb(0, 0, 0); font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial">
+	</span></font>
+	<font face="Courier New" style="color: rgb(0, 0, 0); font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial">
+	<span lang="EN-US">y</span></font><font face="Courier New" style="color: rgb(0, 0, 0); font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US">=</span></font><span style="color: rgb(0, 0, 0); font-family: Times New Roman; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none">β</span><sub style="color: rgb(0, 0, 0); font-family: Times New Roman; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US" style="font-family: Times;">0</span></sub><font face="Courier New" style="color: rgb(0, 0, 0); font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US">+</span></font><span style="color: rgb(0, 0, 0); font-family: Times New Roman; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none">β</span><sub style="color: rgb(0, 0, 0); font-family: Times New Roman; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US" style="font-family: Times;">1</span></sub><font face="Courier New" style="color: rgb(0, 0, 0); font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US">x</span></font><font face="Courier New" style="color: rgb(0, 0, 0); font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US" style="font-family: Times;">1</span><span lang="EN-US">+</span></font><span style="color: rgb(0, 0, 0); font-family: Times New Roman; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none">β</span><sub style="color: rgb(0, 0, 0); font-family: Times New Roman; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US" style="font-family: Times;">2</span></sub><font face="Courier New" style="color: rgb(0, 0, 0); font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US">x</span></font><font face="Courier New" style="color: rgb(0, 0, 0); font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US" style="font-family: Times;">2</span><span lang="EN-US">+</span></font><span style="color: rgb(0, 0, 0); font-family: Times New Roman; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none">β</span><sub style="color: rgb(0, 0, 0); font-family: Times New Roman; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US" style="font-family: Times;">3</span></sub><font face="Courier New" style="color: rgb(0, 0, 0); font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US">x</span></font><font face="Courier New" style="color: rgb(0, 0, 0); font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US" style="font-family: Times;">3</span><span lang="EN-US">+</span></font><span style="color: rgb(0, 0, 0); font-family: Times New Roman; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none">β</span><sub style="color: rgb(0, 0, 0); font-family: Times New Roman; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US" style="font-family: Times;">4</span></sub><font face="Courier New" style="color: rgb(0, 0, 0); font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US">x</span></font><font face="Courier New" style="color: rgb(0, 0, 0); font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US" style="font-family: Times;">4</span><span lang="EN-US">+</span></font><span style="color: rgb(0, 0, 0); font-family: Times New Roman; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none">β</span><sub style="color: rgb(0, 0, 0); font-family: Times New Roman; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US" style="font-family: Times;">5</span></sub><font face="Courier New" style="color: rgb(0, 0, 0); font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US">x</span></font><font face="Courier New" style="color: rgb(0, 0, 0); font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US" style="font-family: Times;">5</span><span lang="EN-US">+</span>ε</font><font face="Courier New" style="color: rgb(0, 0, 0); font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial">
+	</font>
+	<span lang="EN-US" style="color: rgb(0, 0, 0); font-family: Times New Roman; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial">
+	using</span><font face="Courier New"><span lang="EN-US" style="color: rgb(0, 0, 0); font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial">&nbsp;</span><span lang="EN-US" style="color: rgb(0, 0, 0); font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial">y</span><span lang="EN-US" style="color: rgb(0, 0, 0); font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial">&nbsp;</span></font><span lang="EN-US" style="color: rgb(0, 0, 0); font-family: Times New Roman; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial">as 
+	the dependent variable and all</span><span lang="EN-US" style="color: rgb(0, 0, 0); font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><font face="Courier New">&nbsp;</font></span><span lang="EN-US" style="color: rgb(0, 0, 0); font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><font face="Courier New">x</font></span><span style="color: rgb(0, 0, 0); font-family: Courier New; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><sub><span lang="EN-US" style="font-family: Times;">j</span></sub></span><font face="Courier New"><span lang="EN-US" style="color: rgb(0, 0, 0); font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial">’s
+	</span></font>
+	<span lang="EN-US" style="color: rgb(0, 0, 0); font-family: Times New Roman; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial">
+	as the independent variables.</span></p>
+	<ol>
+		<li type="a">
+		<p class="MsoNormal"><font face="Times New Roman"><span lang="EN-US">
+		Form a 95% confidence interval for </span></font>
+		<span style="color: rgb(0, 0, 0); font-family: Times New Roman; font-size: medium; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none">
+		β</span><sub style="color: rgb(0, 0, 0); font-family: Times New Roman; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US" style="font-family: Times;">3</span></sub><font face="Times New Roman"><span lang="EN-US"> 
+		and again for </span></font>
+		<span style="color: rgb(0, 0, 0); font-family: Times New Roman; font-size: medium; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none">
+		β</span><sub style="color: rgb(0, 0, 0); font-family: Times New Roman; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US" style="font-family: Times;">5</span></sub><font face="Times New Roman"><span lang="EN-US">.</span></font></p>
+		</li>
+		<li type="a">
+		<p class="MsoNormal"><span lang="en-us"><font face="Times New Roman">
+		Form a 95% confidence interval for</font></span><font face="Times New Roman"><span lang="EN-US">
+		</span>β<sub><span lang="EN-US" style="font-family:Times;mso-bidi-font-family:&quot;Times New Roman&quot;">3 
+  </span></sub><span lang="EN-US">+ 2</span>β<sub><span lang="EN-US" style="font-family:Times;mso-bidi-font-family:&quot;Times New Roman&quot;">5</span></sub><span lang="EN-US">.</span></font></p>
+		</li>
+		<li type="a">
+		<p class="MsoNormal"><span lang="en-us"><font face="Times New Roman">
+		Show graphically a 95% confidence region for </font></span>
+		<span style="color: rgb(0, 0, 0); font-family: Times New Roman; font-size: medium; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none">
+		β</span><sub style="color: rgb(0, 0, 0); font-family: Times New Roman; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US" style="font-family: Times;">3</span></sub><span lang="en-us"><font face="Times New Roman"> 
+		and </font></span>
+		<span style="color: rgb(0, 0, 0); font-family: Times New Roman; font-size: medium; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none">
+		β</span><sub style="color: rgb(0, 0, 0); font-family: Times New Roman; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US" style="font-family: Times;">5</span></sub><span lang="en-us"><font face="Times New Roman">.
+		</font></span><font face="Times New Roman">Plot the origin on this 
+		display. The location of the origin on the display tells us the outcome 
+		of a certain hypothesis test. State that test and its outcome.</font></p>
+		</li>
+		<li type="a">
+		<p class="MsoNormal"><span lang="en-us"><font face="Times New Roman">If 
+		a 95% joint confidence region was computed for (</font></span><span style="color: rgb(0, 0, 0); font-family: Times New Roman; font-size: medium; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none">β</span><sub style="color: rgb(0, 0, 0); font-family: Times New Roman; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US" style="font-family: Times;">1</span></sub><span lang="en-us"><font face="Times New Roman">,
+		</font></span>
+		<span style="color: rgb(0, 0, 0); font-family: Times New Roman; font-size: medium; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none">
+		β</span><sub style="color: rgb(0, 0, 0); font-family: Times New Roman; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US" style="font-family: Times;">2</span></sub><span lang="en-us"><font face="Times New Roman">,
+		</font></span>
+		<span style="color: rgb(0, 0, 0); font-family: Times New Roman; font-size: medium; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none">
+		β</span><sub style="color: rgb(0, 0, 0); font-family: Times New Roman; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US" style="font-family: Times;">3</span></sub><span lang="en-us"><font face="Times New Roman">,
+		</font></span>
+		<span style="color: rgb(0, 0, 0); font-family: Times New Roman; font-size: medium; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none">
+		β</span><sub style="color: rgb(0, 0, 0); font-family: Times New Roman; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US" style="font-family: Times;">4</span></sub><span lang="en-us"><font face="Times New Roman">,
+		</font></span>
+		<span style="color: rgb(0, 0, 0); font-family: Times New Roman; font-size: medium; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none">
+		β</span><sub style="color: rgb(0, 0, 0); font-family: Times New Roman; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: justify; text-indent: -16px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial"><span lang="EN-US" style="font-family: Times;">5</span></sub><span lang="en-us"><font face="Times New Roman">), 
+		would the origin, (0, 0, 0, 0, 0), lie inside or outside the region? 
+		Explain.</font></span></p></li>
+		<li type="a">
+		<p class="MsoNormal"><span lang="en-us"><font face="Times New Roman">
+		Suppose it is suspected that non-volatile solids have no linear effect 
+		on the response. State a hypothesis in terms of the parameters of the 
+		full model that reflects this suspicion, and test it using a confidence 
+		interval in your answer to one of the above questions. Explain why the chosen confidence interval 
+		can be used to do this work.</font></span></p></li>
+	</ol>
+</blockquote>
+<ol>
+	<li value="2"><font face="Times New Roman"><a name="Problem 2"></a>The
+	</font><font face="Courier New">
+	<a tppabs="http://www.stat.lsa.umich.edu/~faraway/data/prostate.dat" href="http://www.stat.nthu.edu.tw/~swcheng/Teaching/stat5410/data/prostate.txt">data</a></font><font face="Times New Roman"> for this assignment come from a study on 97 men with prostate 
+	cancer who were due to receive a radical prostatectomy. The variables are:
+	<br>
+	</font><font face="Courier New">&nbsp;&nbsp;&nbsp; lcavol: log(cancer 
+	volume) <br>
+&nbsp;&nbsp;&nbsp; lweight: log(prostate weight) <br>
+&nbsp;&nbsp;&nbsp; age: age <br>
+&nbsp;&nbsp;&nbsp; lbph: log(benign prostatic hyperplasia amount) <br>
+&nbsp;&nbsp;&nbsp; svi: seminal vesicle invasion <br>
+&nbsp;&nbsp;&nbsp; lcp: log(capsular penetration) <br>
+&nbsp;&nbsp;&nbsp; gleason: Gleason score <br>
+&nbsp;&nbsp;&nbsp; pgg45: percentage Gleason scores 4 or 5 <br>
+&nbsp;&nbsp;&nbsp; lpsa: log(prostate specific antigen) </font>
+	</li>
+</ol>
+<blockquote>
+	<ol>
+		<li type="a"><font face="Times New Roman">Fit a model with </font>
+		<font face="Courier New">lpsa</font><font face="Times New Roman"> as the response and 
+	the other variables as predictors.</font><ol>
+			<li type="i"><font face="Times New Roman">Compute 90% and 95% 
+			confidence intervals for the parameter associated with </font>
+			<font face="Courier New">age</font><font face="Times New Roman">. 
+			Using just these intervals, what could we have deduced about the 
+			p-value for </font><font face="Courier New">age</font><font face="Times New Roman"> 
+			in the regression summary?</font></li>
+			<li type="i"><font face="Times New Roman">Suppose a new patient with the 
+		following values arrives: </font>
+			<pre><font face="Courier New" size="3">  lcavol  lweight      age     lbph      svi      lcp  gleason    pgg45 
+ 1.44692  3.62301 65.00000  0.30010  0.00000 -0.79851  7.00000 15.00000 </font></pre>
+			<font face="Times New Roman">Predict the </font><tt>
+			<font face="Courier New">lpsa</font></tt><font face="Times New Roman"> 
+		for this patient along with an appropriate 95% confidence interval.</font></li>
+			<li type="i"><font face="Times New Roman">Repeat the last question 
+			for a patient with the same values except that he/she is aged 20. Explain why the 
+		confidence interval is wider.</font></li>
+			</ol>
+		</li>
+		<li type="a"><font face="Times New Roman">&nbsp;For the model of</font><font face="Courier New"> 
+		part a</font><font face="Times New Roman">, remove all the predictors 
+		that are not significant at the 5% level (Do this in one shot - not 
+		sequentially) and refit a model.</font><ol>
+			<li type="i"><font face="Times New Roman">Re-compute the predictions 
+			in</font><font face="Courier New"> part a </font><font face="Times New Roman">
+			using the reduced model. Are the confidence intervals wider or 
+			narrower. Which predictions would you prefer? Explain.</font></li>
+			<li type="i"><font face="Times New Roman">Test the reduced model against that 
+			of </font><font face="Courier New">part a</font><font face="Times New Roman">. Which 
+	model is preferred?</font></li>
+		</ol>
+		</li>
+		</ol>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		</blockquote>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+		<p>　</p>
+
+
+
+</body></html>
