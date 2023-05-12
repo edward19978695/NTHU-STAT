@@ -1,0 +1,312 @@
+---
+title: "Reliability Analysis Homework 3"
+author: "110024516 邱繼賢"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1.5}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+## Problem 1.  
+### (a)  
+
+(1) simple binomial method
+$$
+\hat{F}_1(t)\ =\ \frac{1}{n}\sum\limits_{i=1}^nI\left(t_i\ \leq\ t\right)
+$$
+
+(2) Kaplan-Meier method
+$$
+\hat{S}(t)\ =\ \prod\limits_{t_i\leq t}\left(1-\frac{d_i}{n_i}\right)\ \ \Rightarrow\ \ \hat{F}_2(t)\ =\ 1-\hat{S}(t)
+$$
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+library(dplyr)
+library(knitr)
+titanium_data = read.csv("Titanium01.csv")
+titanium_data = titanium_data %>% 
+    mutate(F1 = c(1/100,2/100,3/100,4/100,5/100,6/100,7/100,8/100,9/100,9/100), 
+           ni = c(100,99,98,97,96,95,94,93,92,91), 
+           di = c(1,1,1,1,1,1,1,1,1,0))
+Si = c(1-1/100)
+for (i in 2:10) {
+    Si[i] = Si[i-1]*(1-titanium_data$di[i]/titanium_data$ni[i])
+}
+titanium_data = titanium_data %>% mutate(S = Si, F2 = 1-S)
+titanium_data
+```
+
+
+```{r echo=FALSE}
+kable(titanium_data[,c(1,4,8)], col.names = c("t","$\\hat{F}_1(t)$","$\\hat{F}_2(t)$"))
+```
+
+
+### (b)  
+
+```{r echo=FALSE}
+plot(titanium_data$Thousands.of.Cycles, titanium_data$F1, type = "n", xlab = "Time", ylab = "empirical CDF", ylim = c(0,0.15), xlim = c(0,100))
+for (i in 1:9) {
+    lines(titanium_data$Thousands.of.Cycles[i:(i+1)], titanium_data$F1[c(i,i)], lwd = 2)
+}
+segments(0,0,18,0, lwd = 2)
+```
+
+### (c)  
+Weibull distribution
+$$
+\begin{aligned}
+&p\ =\ F(t_p)\ =\ 1-exp\left[-\left(\frac{t}{\eta}\right)^\beta\right]\\
+\Rightarrow\ &t_p\ =\ \eta[-log(1-p)]^{\frac{1}{\beta}}\\
+\Rightarrow\ &log(t_p)\ =\ log(\eta)\ +\ log(-log(1-p))\frac{1}{\beta}
+\end{aligned}
+$$
+plotting position
+$$
+\left(log\left(T_{(i)}\right)\ ,\ \Phi_{sev}^{-1}\left(\frac{i-0.5}{n}\right)\right)\ \ ,\ \ \Phi_{sev}^{-1}(p)\ =\ log\left(-log(1-p)\right)
+$$
+and then relabel at
+$$
+\left(T_{(i)}\ ,\ \frac{i-0.5}{n}\right)
+$$
+
+```{r echo=FALSE}
+plotting_pos = data.frame(ti = titanium_data$Thousands.of.Cycles[-10], 
+                         Fi = c(0.5/100,1.5/100,2.5/100,3.5/100,4.5/100,5.5/100,6.5/100,7.5/100,8.5/100))
+plot(log(plotting_pos$ti),log(-log(1-plotting_pos$Fi)),pch=19, yaxt="n",xaxt="n",frame=T, 
+     xlab = "Time", ylab = "Proportion Failing", main = "Weibull prob. plot")
+fit_weibull = lm(log(-log(1-Fi)) ~ log(ti), plotting_pos)
+abline(fit_weibull)
+axis(2,round(log(-log(1-plotting_pos$Fi)),3),label=round(plotting_pos$Fi,3),cex.axis=0.8,las=1)
+# axis(4,log(-log(1-plotting_pos$Fi)),round(log(-log(1-plotting_pos$Fi)),3),cex.axis=0.8,las=1,line=-1)
+axis(1,log(plotting_pos$ti),round(plotting_pos$ti,2),cex.axis=0.8)
+# axis(3,log(plotting_pos$ti),round(log(plotting_pos$ti),2),cex.axis=0.8)
+```
+
+可以看到資料點分佈在 Weibull probability plot 上大致呈現為一直線，將 $\Phi_{sev}^{-1}\left(\frac{i-0.5}{n}\right)$ 對 $log\left(T_{(i)}\right)$ 做回歸直線，其斜率估計值 $1.75869$ 即為 shape parameter $\beta$ 的估計值  
+
+### (d)  
+
+```{r echo=FALSE}
+summary(fit_weibull)
+```
+
++ 由 **(c)** 的圖形可以看出資料大致落在一直線上  
++ $\Phi_{sev}^{-1}\left(\frac{i-0.5}{n}\right)$ 對 $log\left(T_{(i)}\right)$ 的線性模型 $R^2\ =\ 99.15\%$，由此可知此直線模型可以很好的解釋資料點的分佈  
+
+故可以推論出資料符合 Weibull distribution  
+
+
+### (e)  
+藉由我們上面配飾的 linear model，可以推得 $\left(\hat{\eta}\ ,\ \hat{\beta}\right)\ =\ \left(exp\left(\frac{10.28786}{1.75869}\right),\ 1.75869\right)\ =\ (347.1403\ ,\ 1.75869)$，因此 $t_{0.10}$ 可以估計為
+$$
+\hat{t}_{0.10}\ =\ \hat{\eta}\left[-log(1-0.10)\right]^{1/\hat{\beta}}\ =\ 96.55944
+$$
+但是目前的資料所估計出的 propotion failing 只介於 0 到 0.085 之間，我們只能說機率值落在此範圍的數據大致服從 Weibull distribution，並不能保證在此範圍之外也依舊如此，而 $\hat{t}_{0.10}$ 就是一個外差估計值，其所估計出的結果可能會有較為明顯的誤差。  
+
+
+
+
+## Problem 2.  
+
+
+```{r echo=FALSE}
+photo_data = read.csv("PhotoDetector.csv")
+compute_w2 = function(p,se) {
+  exp(3.21*se/(p*(1-p)))
+}
+photo = photo_data %>% 
+    mutate(di = c(1,1,2,1,1,1,0), ri = c(0,0,0,0,0,0,21)) %>% 
+    select(Thousands.of.Hours.Lower, Thousands.of.Hours.Upper, di, ri) %>% 
+    mutate(Fi = c(0,1/28,2/28,4/28,5/28,6/28,7/28), se_F = sqrt(Fi*(1-Fi)/28), 
+           wi.2 = compute_w2(Fi,se_F), F_L.2 = Fi/(Fi+(1-Fi)*wi.2), F_U.2 = Fi/(Fi+(1-Fi)/wi.2))
+photo = photo[-1,]
+```
+
+
+```{r echo=FALSE}
+# Exponential
+fit_exp = lm(-log(1-Fi) ~ Thousands.of.Hours.Lower, photo)
+plot(photo$Thousands.of.Hours.Lower, -log(1-photo$Fi), pch = 19, yaxt="n", xaxt = "n", xlab = "Time", ylab = "Proportion Failing", main = "Exponential prob. plot", ylim = c(0,0.9))
+points(photo$Thousands.of.Hours.Lower, -log(1-photo$F_L.2), pch = 2, col = 2)
+points(photo$Thousands.of.Hours.Lower, -log(1-photo$F_U.2), pch = 6, col = 2)
+abline(fit_exp)
+axis(2,-log(1-photo$Fi),label=round(photo$Fi,3),cex.axis=0.8,las=1)
+# axis(2,-log(1-photo$F_L.2),label=round(photo$F_L.2,3),cex.axis=0.8,las=1)
+# axis(2,-log(1-photo$F_U.2),label=round(photo$F_U.2,3),cex.axis=0.8,las=1)
+axis(1,photo$Thousands.of.Hours.Lower,round(photo$Thousands.of.Hours.Lower,2),cex.axis=0.8)
+
+# Weibull
+fit_wei = lm(log(-log(1-Fi)) ~ log(Thousands.of.Hours.Lower), photo)
+plot(log(photo$Thousands.of.Hours.Lower), log(-log(1-photo$Fi)), pch=19, yaxt="n", xaxt="n", xlab = "Time", ylab = "Proportion Failing", main = "Weibull prob. plot", ylim = c(-7,-0.1))
+points(log(photo$Thousands.of.Hours.Lower), log(-log(1-photo$F_L.2)), pch = 2, col = 2)
+points(log(photo$Thousands.of.Hours.Lower), log(-log(1-photo$F_U.2)), pch = 6, col = 2)
+abline(fit_wei)
+axis(2, log(-log(1-photo$Fi)), labels = round(photo$Fi,3),cex.axis=0.8,las=1)
+# axis(2, log(-log(1-photo$F_L.2)), labels = round(photo$F_L.2,3),cex.axis=0.8,las=1)
+# axis(2, log(-log(1-photo$F_U.2)), labels = round(photo$F_U.2,3),cex.axis=0.8,las=1)
+axis(1, log(photo$Thousands.of.Hours.Lower), labels = round(photo$Thousands.of.Hours.Lower, 3), cex.axis=0.8,las=1)
+
+# log normal
+fit_lognor = lm(qnorm(Fi) ~ log(Thousands.of.Hours.Lower), photo)
+plot(log(photo$Thousands.of.Hours.Lower), qnorm(photo$Fi), pch=19, yaxt="n", xaxt="n", xlab = "Time", ylab = "Proportion Failing", main = "Log Normal prob. plot", ylim = c(-3,0.2))
+points(log(photo$Thousands.of.Hours.Lower), qnorm(photo$F_L.2), pch = 2, col = 2)
+points(log(photo$Thousands.of.Hours.Lower), qnorm(photo$F_U.2), pch = 2, col = 2)
+abline(fit_lognor)
+axis(2, qnorm(photo$Fi), labels = round(photo$Fi,3),cex.axis=0.8,las=1)
+axis(1, log(photo$Thousands.of.Hours.Lower), labels = round(photo$Thousands.of.Hours.Lower, 3), cex.axis=0.8,las=1)
+```
+
++ 三種分布的 probability plots 皆可以在其 simultaneous confidence bands 中劃出一條直線  
++ Exponential probability plot 中資料點分布最不接近一條直線  
++ Weibull 和 lognormal probability plot 中資料點大致都落在一直線上，其中又以 Weibull 的更為接近一直線  
+
+故 Weibull distribution 比較適合用來配適此筆資料的模型。  
+
+
+## Problem 3.  
+### (a)  
+The FREC distribution cdf
+$$
+p\ =\ F\left(t_p\right)\ =\ \Phi_{lev}\left[\frac{log(t_p)-\mu}{\sigma}\right]\ \Rightarrow\ log(t_p)\ =\ \mu\ +\ \sigma\ \Phi_{lev}^{-1}(p)
+$$
+plotting position
+$$
+\left(log\left(t_p\right)\ ,\ \Phi_{lev}^{-1}(p)\right)\ \ ,\ \ \Phi_{lev}^{-1}(p)\ =\ -log(-log(p))
+$$
+
+### (b)  
+relabel at $\left(t_p\ ,\ p\right)$
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(latex2exp)
+ti=seq(1,80,by=2)
+frec_cdf = function(mu, sigma, t) {
+    exp(-exp(-(log(t)-mu)/sigma))
+}
+F1 = frec_cdf(1,1,ti)
+F2 = frec_cdf(1,2,ti)
+plot(log(ti), -log(-log(F1)), type = "l", xaxt="n",yaxt="n", lwd = 2, 
+     xlab = "Time", ylab = "Proportion Failing", main = "FREC prob. plot")
+lines(log(ti), -log(-log(F2)), lwd = 2, col = 4)
+abline(h = 0, lty = 2, col = 2)
+
+axis(2, -log(-log(F1)), labels = round(F1, 3),cex.axis=0.8,las=1)
+axis(1, log(ti), labels = round(ti,3), ,cex.axis=0.8)
+axis(4, 0, 0, las = 1, cex.axis = 0.8, col = 2, col.axis = 2)
+axis(2,0,TeX("$\\Phi_{lev}(0)$=0.37"), las = 1, cex.axis=0.5, col=2, col.axis=2)
+legend("topleft", legend = c("FREC(1,1)", "FREC(1,2)"), col = c(1,4), lwd = 2)
+```
+
+
+### (c)  
+$$
+log\left(t_{p^*}\right)\ =\ log\left(e^\mu\right)\ =\ \mu\ +\ \sigma\ \Phi_{lev}^{-1}(p^*)\ \Rightarrow\ \Phi_{lev}^{-1}(p^*)\ =\ 0\ \Rightarrow\ p^*\ =\ \Phi_{lev}(0)\ =\ 0.37
+$$
+the $0.37$ quantile of the distribution corresponds to the scale paremeter $e^\mu$
+
+## Problem 4.  
+### (a)  
+$$
+\begin{aligned}
+&p\ =\ F(t_p)\ =\ 1-\left[1+\left(\frac{log(t_p)-\mu}{\sigma}\right)\right]^{-1}\\
+\Rightarrow\ &log(t_p)\ =\ \mu\ +\ \sigma\left(\frac{p}{1-p}\right)\\
+\Rightarrow\ &t_p\ =\ exp\left[\mu\ +\ \sigma\left(\frac{p}{1-p}\right)\right]
+\end{aligned}
+$$
+
+
+### (b)  
+plotting position
+$$
+\left(log(t_p)\ ,\ \left(\frac{p}{1-p}\right)\right)
+$$
+which will linearize all the cdfs with slope $=\ \frac{1}{\sigma}$, and x-intercept $=\ \mu$  
+
+
+### (c)  
+By inverse CDF method to generate the sample :  
+
+(1) draw the sample $\left\{U_i\right\}_{i=1}^{20}\ \overset{iid}{\sim}\ U(0,1)$  
+
+(2) $F^{-1}(U_i)\ =\ T_i\ \overset{iid}{\sim}\ F$, where $F^{-1}(p\ ;\ \mu,\sigma)\ =\ exp\left[\mu\ +\ \sigma\left(\frac{p}{1-p}\right)\right]$  
+
+$\left\{T_i\right\}_{i=1}^{20}$ are the samples what we want.  
+Taking $\left(log\left(T_{(i)}\right)\ ,\ \frac{i-0.5}{20}/\left(1-\frac{i-0.5}{20}\right)\right)$ as plotting position, and then relabeling at $\left(T_{(i)}\ ,\ \frac{i-0.5}{20}\right)$
+
+```{r echo=FALSE}
+F_inverse = function(p) {
+    exp(3+2*(p/(1-p)))
+}
+set.seed(07551)
+ui = runif(20)
+ti = F_inverse(ui)
+sample_data = data.frame(ui = ui, ti = ti) %>% arrange(ti) %>% 
+    mutate(i = 1:20, pi = (i-0.5)/20)
+plot(log(sample_data$ti), sample_data$pi/(1-sample_data$pi), pch = 16, xaxt = "n", yaxt = "n", xlab = "Time", ylab = "Proportion Failing")
+axis(2, sample_data$pi/(1-sample_data$pi), labels = round(sample_data$pi, 3), cex.axis=0.8,las=1)
+axis(1, log(sample_data$ti), labels = round(sample_data$ti, 3), cex.axis=0.8,las=1)
+```
+
+
+
+
+### (d)  
+$\mu$ (or $e^\mu$ in relabeling) is the x-intercept and $\frac{1}{\sigma}$ is the slope in the probability plot
+
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
