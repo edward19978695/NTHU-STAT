@@ -1,0 +1,302 @@
+---
+title: "品質管制 Homework 9"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+    number_sections: true
+author: "110024516 統研碩一 邱繼賢"
+---
+**5.2**  
+Note that the IC distribution is $\{X_i\}_{i=1}^n\ \stackrel{iid}{\sim}\ N(\mu_0\ ,\ \sigma^2)$, and the OC distribution is $\{X_i\}_{i=1}^n\ \stackrel{iid}{\sim}\ N(\mu_1\ ,\ \sigma^2)$.  
+By (5.1)
+\[
+\begin{aligned}
+&E_n\ =\ \lambda X_n\ +\ (1-\lambda) E_{n-1}\ =\ \lambda\sum_{i=1}^n(1-\lambda)^{n-i}\ X_i\ +\ (1-\lambda)^n\ \mu_0\\
+&\text{When the process is IC up to the time point n, then}\\
+&\mu_{E_n}\ =\ E(E_n)\ =\ \lambda\sum_{i=1}^n(1-\lambda)^{n-i}\ E(X_i)\ +\ (1-\lambda)^n\ \mu_0\ =\ [\ \lambda\sum_{i=1}^n(1-\lambda)^{n-i}\ +\ (1-\lambda)^n\ ]\ \mu_0\ =\ \mu_0\\
+&\sigma_{E_n}^2\ =\ Var(E_n)\ =\ \lambda^2\sum_{i=1}^n(1-\lambda)^{2n-2i}\ Var(X_i)\ =\ \lambda^2\times\frac{1-(1-\lambda)^{2n}}{1-(1-\lambda)^2}\ \sigma^2\ =\ \frac{\lambda}{2-\lambda}\ [1-(1-\lambda)^{2n}]\ \sigma^2\ \ \ (5.2)\\
+&\because\ E_n\ \text{is a linear combination of $X_i$ which are all from normal distributions}\\
+&\therefore\ E_n\ \text{is also from a normal distribution}\ \sim\ N(\mu_{E_n}\ ,\ \sigma_{E_n}^2)\ =\ N(\mu_0\ ,\ \frac{\lambda}{2-\lambda}\ [1-(1-\lambda)^{2n}]\ \sigma^2)\ \ \ (5.3)\\
+&\text{In cases when the process has a mean shift from $\mu_0$ to $\mu_1$ at the time point $1\leq\tau\leq n$}\\
+&E_{n,\tau}\ =\ \lambda\ [\ \sum_{i=1}^{\tau-1}(1-\lambda)^{n-i}X_i\ +\ \sum_{i=\tau}^n(1-\lambda)^{n-i}X_i\ ]\ +\ (1-\lambda)^n\mu_0\\
+&\text{where}\ \{X_i\}_{i=1}^{\tau-1}\ \stackrel{iid}{\sim}\ N(\mu_0,\sigma^2)\ \text{and}\ \{X_i\}_{i=\tau}^n\ \stackrel{iid}{\sim}\ N(\mu_1,\sigma^2)\\
+&\Rightarrow\ \mu_{E_n,\tau}\ =\ E(E_{n,\tau})\ =\ \lambda\sum_{i=1}^n(1-\lambda)^{n-i}\mu_0\ +\ (1-\lambda)^n\mu_0\ +\ \lambda\sum_{i=\tau}^n(1-\lambda)^{n-i}(\mu_1-\mu_0)\\
+&=\ \mu_0\ +\ \lambda\ \frac{1-(1-\lambda)^{n-\tau+1}}{1-(1-\lambda)}(\mu_1-\mu_0)\ =\ \mu_0\ +\ [\ 1-(1-\lambda)^{n-\tau+1}\ ]\ (\mu_1-\mu_0)\ \ \ (5.4)\\
+&\text{As $n\rightarrow\infty$, the variance of $E_n$ converges to}\\
+&\widetilde{\sigma}_{0,\lambda}^2\ =\ \lim_{n\rightarrow\infty}\sigma_{E_n}^2\ =\ \lim_{n\rightarrow\infty}\frac{\lambda}{2-\lambda}\ [1-(1-\lambda)^{2n}]\ \sigma^2\ =\ \frac{\lambda}{2-\lambda}\ \sigma^2\ (\because\ 0<1-\lambda<1)\ \ \ \ (5.5)
+\end{aligned}
+\]
+
+
+\newpage
+**5.4**  
+First, compute the charting statistic $E_n$ from (5.1) 
+$$E_n\ =\ \lambda\ X_n\ +\ (1-\lambda)\ E_{n-1}\ \text{ , where }\ E_0\ =\ \mu_0\ =\ 10$$
+with respective $\lambda$ values in (i), (ii), (iii) and (iv). The results are shown as below : 
+```{r echo=FALSE, warning=FALSE}
+library(knitr)
+
+data = data.frame(n = 1:30, 
+                  X_i = c(13,12,10,10,9,7,11,12,7,10,11,10,11,10,9,18,14,16,18,12,13,17,18,15,18,15,14,18,14,16))
+compute_En = function(lambda) {
+    En = c()
+    En[1] = lambda*data$X_i[1] + (1-lambda)*10
+    for (i in 2:30) {
+        En[i] = lambda*data$X_i[i] + (1-lambda)*En[i-1]
+    }
+    return(En)
+}
+
+data$En_1 = compute_En(0.1)
+data$En_2 = compute_En(0.5)
+data$En_3 = compute_En(0.1)
+data$En_4 = compute_En(0.5)
+
+kable(data, col.names = c("n","$X_n$","(i) $E_n$","(ii) $E_n$","(iii) $E_n$","(iv) $E_n$"))
+```
+
+
+Second, find the values of $\rho$ from Table 5.1 in the textbook with respective $ARL_0$ and $\lambda$ values, and then compute the control limits with such $\rho$ and $\lambda$ values by the definition from (5.7)
+$$
+\begin{aligned}
+USL\ &=\ \mu_0\ +\ \rho\ \sqrt{\frac{\lambda}{2-\lambda}}\ \sigma\\
+CL\ &=\ \mu_0\\
+LCL\ &=\ \mu_0\ -\ \rho\ \sqrt{\frac{\lambda}{2-\lambda}}\ \sigma\\
+\end{aligned}
+$$
+where $\mu_0$ = 0, and $\sigma$ = 2. The results are shown as below : 
+
+```{r echo=FALSE, warning=FALSE}
+table1 = data.frame(title = c("(i)","(ii)","(iii)","(iv)"), 
+                    rho = c(2.454,2.777,2.814,3.071), 
+                    U = c(11.1260,13.2066,11.2912,13.5461), 
+                    C = c(10,10,10,10), 
+                    L = c(8.8740,6.7934,8.7088,6.4539))
+kable(table1, col.names = c("", "$\\rho$", "UCL", "CL", "LCL"))
+```
+
+
+Third, construct the EWMA charts with respective charting statistics and control limits : 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(latex2exp)
+
+compute_control_limit = function(lambda, rho) {
+    u = 10+rho*sqrt(lambda/(2-lambda))*2
+    l = 10-rho*sqrt(lambda/(2-lambda))*2
+    return(c(u,l))
+}
+
+par(mfcol = c(2,2), mar=c(3,3.5,2,5.5))
+# (i)
+
+ii = seq(1,30)
+
+plot(ii, data$En_1, type = "o", lty = 1, pch = 16, xlab = "n", ylab = TeX("$E_n$"), 
+     mgp = c(2,1,0), xlim = c(0,30), ylim = c(6,17), cex = 0.8)
+U = compute_control_limit(0.1,2.454)[1]
+L = compute_control_limit(0.1,2.454)[2]
+lines(ii, rep(U,30), lty = 2, cex = 0.8)
+lines(ii, rep(L,30), lty = 2, cex = 0.8)
+lines(ii, rep(10,30), lty = 3, cex = 0.8)
+axis(4, at = c(U,10,L), labels = c("U=11.1260","C=10","L=8.8740"), 
+     cex = 0.8, las = 1)
+title(TeX("(i) ARL_0=200,$\\lambda$=0.1"))
+
+# (ii)
+
+ii = seq(1,30)
+plot(ii, data$En_2, type = "o", lty = 1, pch = 16, xlab = "n", ylab = TeX("$E_n$"), 
+     mgp = c(2,1,0), xlim = c(0,30), ylim = c(6,17), cex = 0.8)
+U = compute_control_limit(0.5,2.777)[1]
+L = compute_control_limit(0.5,2.777)[2]
+lines(ii, rep(U,30), lty = 2, cex = 0.8)
+lines(ii, rep(L,30), lty = 2, cex = 0.8)
+lines(ii, rep(10,30), lty = 3, cex = 0.8)
+axis(4, at = c(U,10,L), labels = c("U=13.2066","C=10","L=6.7934"), 
+     cex = 0.8, las = 1)
+title(TeX("(ii) ARL_0=200,$\\lambda$=0.5"))
+
+
+# (iii)
+
+ii = seq(1,30)
+plot(ii, data$En_3, type = "o", lty = 1, pch = 16, xlab = "n", ylab = TeX("$E_n$"), 
+     mgp = c(2,1,0), xlim = c(0,30), ylim = c(6,17), cex = 0.8)
+U = compute_control_limit(0.1,2.814)[1]
+L = compute_control_limit(0.1,2.814)[2]
+lines(ii, rep(U,30), lty = 2, cex = 0.8)
+lines(ii, rep(L,30), lty = 2, cex = 0.8)
+lines(ii, rep(10,30), lty = 3, cex = 0.8)
+axis(4, at = c(U,10,L), labels = c("U=11.2912","C=10","L=8.7088"), 
+     cex = 0.8, las = 1)
+title(TeX("(iii) ARL_0=500,$\\lambda$=0.1"))
+
+
+# (iv)
+
+ii = seq(1,30)
+plot(ii, data$En_4, type = "o", lty = 1, pch = 16, xlab = "n", ylab = TeX("$E_n$"), 
+     mgp = c(2,1,0), xlim = c(0,30), ylim = c(6,17), cex = 0.8)
+U = compute_control_limit(0.5,3.071)[1]
+L = compute_control_limit(0.5,3.071)[2]
+lines(ii, rep(U,30), lty = 2, cex = 0.8)
+lines(ii, rep(L,30), lty = 2, cex = 0.8)
+lines(ii, rep(10,30), lty = 3, cex = 0.8)
+axis(4, at = c(U,10,L), labels = c("U=13.5461","C=10","L=6.4539"), 
+     cex = 0.8, las = 1)
+title(TeX("(iv) ARL_0=500,$\\lambda$=0.5"))
+```
+
+```{r echo=FALSE}
+table = data.frame(hello = c("(i)","(ii)","(iii)","(iv)"), 
+                   rho = c(2.454,2.777,2.814,3.071), 
+                   length = c(11.126-8.874,13.2066-6.7934,11.2912-8.7088,13.5461-6.4539), 
+                   signal = c(18,16,18,16))
+kable(table, col.names = c("","$\\rho$", "UCL-LCL", "Signal time point"))
+```
+
+結論：  
+(1) 在$\lambda$值不變，$ARL_0$變大的情況下($i\rightarrow iii\ \text{or}\ ii \rightarrow iv$)，$\rho$數值會變大，進而造成 control limit 的寬度變大，但在此題中並沒有因此造成 signal time point 較晚發生。  
+(2) 在$ARL_0$值不變，$\lambda$變大的情況下($i\rightarrow ii\ \text{or}\ iii \rightarrow iv$)，$\rho$數值會變大，進而造成 control limit 的寬度變大，但因為$\lambda$值變大，所以 charting statistics 也跟著改變了，故在此題中發生了，即使 control limit 寬度變大，signal time point 卻提早發生了。
+
+
+\newpage
+**5.6**  
+Compute the values of $ARL_0$ by the function *xewma.arl()* with respective $\lambda$ and $\rho$ values. The results are shown as below : 
+```{r include=FALSE}
+library(spc)
+xewma.arl(0.1,1,mu = 0,sided = "two") # (i)
+xewma.arl(0.1,2,mu = 0,sided = "two") # (ii)
+xewma.arl(0.5,1,mu=0,sided = "two") # (iii)
+xewma.arl(0.5,2,mu=0,sided = "two") # (iv)
+```
+
+
+```{r echo=FALSE}
+arl_df = data.frame(title = c("(i)","(ii)","(iii)","(iv)"), 
+                    lambda = c(0.1,0.1,0.5,0.5), 
+                    rho = c(1,2,1,2), 
+                    arl0 = c(10.4216,73.2765,3.7861,26.4519))
+kable(arl_df, col.names = c("","$\\lambda$", "$\\rho$","$ARL_0$"))
+```
+
+結論：  
+(1) 在$\lambda$固定的情況下(i$\rightarrow$ii or iii$\rightarrow$iv)，$\rho$和$ARL_0$呈現正相關。  
+(2) 在$\rho$固定的情況下(i$\rightarrow$iii or ii$\rightarrow$iv)，$\lambda$和$ARL_0$呈現負相關。
+
+
+**5.8**
+
+```{r echo=FALSE}
+delta = seq(0,3,0.1)
+n = length(delta)
+
+ARL_001 = c()
+ARL_03 = c()
+ARL_075 = c()
+for (i in 1:n) {
+    ARL_001[i] = xewma.arl(0.01,1.5, mu = delta[i], sided = "two")
+    ARL_03[i] = xewma.arl(0.3,2.713,mu = delta[i], sided = "two")
+    ARL_075[i] = xewma.arl(0.75,2.802,mu = delta[i], sided = "two")
+}
+
+plot(delta, log(ARL_001), type = "l", lty = 1, xlab = expression(delta), 
+     ylab = expression(ARL[1]), yaxt = "n", 
+     mgp = c(2,1,0), cex = 0.8, ylim = c(0,5.5))
+lines(delta, log(ARL_03), lty = 2, cex = 0.8)
+lines(delta, log(ARL_075), lty = 3, cex = 0.8)
+axis(2,at=c(log(1),log(5),log(15),log(50),log(200)),
+     labels=c("0","5","15","50","200"),cex=0.8)
+legend("topright", legend = c(TeX("$\\lambda$=0.01"), TeX("$\\lambda$=0.3"), TeX("$\\lambda$=0.75")), 
+       lty = 1:3, cex = 0.7)
+```
+
+結論：  
+(1) 不論$\lambda$數值大小，$\delta$和$ARL_1$皆呈現負相關。  
+(2) 在$\delta$數值較小時($0\leq\delta\leq0.6$)，較小的$\lambda$值($\lambda=0.01$)表現得較好(即$ARL_1$值較小)。  
+(3) 在$\delta$數值介於中間時($0.6\leq\delta\leq2.3$)，介於中間的$\lambda$值($\lambda=0.3$)表現得較好。  
+(4) 在$\delta$數值較大時($2.3\leq\delta\leq3$)，較大的$\lambda$值($\lambda=0.75$)表現得較好。
+
+
+\newpage
+**5.11**
+
+```{r echo=FALSE}
+compute_E50 = function(k, lambda) {
+    En = c()
+    X_i = rchisq(50, k)
+    En[1] = lambda*X_i[1] + (1-lambda)*k
+    for (i in 2:50) {
+        En[i] = lambda*X_i[i] + (1-lambda)*En[i-1]
+    }
+    return(En[50])
+}
+
+
+par(mfcol = c(2,2))
+# (i)
+E50_1 = c()
+set.seed(12091)
+for (i in 1:100) {
+    E50_1[i] = compute_E50(1,0.5)
+}
+hist(E50_1, xlab = expression(E[50]), ylab = "count",main=TeX("(i) k=1, $\\lambda$=0.5"))
+
+# (ii)
+E50_2 = c()
+set.seed(12092)
+for (i in 1:100) {
+    E50_2[i] = compute_E50(1,0.1)
+}
+hist(E50_2, xlab = expression(E[50]), ylab = "count",main=TeX("(ii) k=1, $\\lambda$=0.1"))
+
+
+
+# (iii)
+E50_3 = c()
+set.seed(12093)
+for (i in 1:100) {
+    E50_3[i] = compute_E50(5,0.5)
+}
+hist(E50_3, xlab = expression(E[50]), ylab = "count",main=TeX("(iii) k=5, $\\lambda$=0.5"))
+
+
+# (iv)
+E50_4 = c()
+set.seed(12094)
+for (i in 1:100) {
+    E50_4[i] = compute_E50(5,0.1)
+}
+hist(E50_4, xlab = expression(E[50]), ylab = "count",main=TeX("(iv) k=5, $\\lambda$=0.1"))
+```
+
+結論：  
+隨著$\chi^2$的自由度k數值變大以及$\lambda$數值變小，$E_{50}$的分佈會從類似$\chi^2$的右偏分佈，逐漸變成類似常態分佈左右對稱且等尾的形式。
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
