@@ -1,0 +1,259 @@
+---
+title: "Discrete Analysis Homework 5"
+author: "110024516 邱繼賢"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1.5}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+## Problem 1.  
+
+
+
+```{r}
+melanoma = read.table("melanoma.txt")
+ct.1 = xtabs(count ~ tumor + site, melanoma)
+ct.1
+```
+
+To test the whether the type and location are independent by Pearson's $X^2$ test : 
+$$
+X^2\ =\ \sum_{ij}\frac{\left(Y_{ij}\ -\ \hat{\mu}_{ij}\right)^2}{\hat{\mu}_{ij}}\ \overset{a}{\sim}\ \chi^2_6
+$$
+where
+$$
+\hat{\mu}_{ij}\ =\ \frac{Y_{i+}\ Y_{+j}}{Y_{++}}
+$$
+
+
+```{r}
+summary(ct.1)
+```
+
+Thus, the p-value $=\ P\left(\chi^2_6\ >\ X^2\right)\ =\ P\left(\chi^2_6\ >\ 65.81\right)\ =\ 2.943e-12\ <\ 0.05$  
+$\Rightarrow$ Reject that the type and location are independent.  
+
+And then fit the main effect only GLM
+$$
+\begin{aligned}
+&Y_{ij}\ \sim\ \text{Poisson}(\mu_{ij})\\
+&\log(\mu_{ij})\ =\ \eta_{ij}\ \sim\ \text{tumor}\ +\ \text{site}
+\end{aligned}
+$$
+Examine the residual of the model by Correspondence Analysis :  
+
+
+```{r}
+mod.1 = glm(count ~ tumor + site, family = poisson, melanoma)
+z = xtabs(residuals(mod.1,type="pearson")~tumor+site, melanoma)
+svdz = svd(z,2,2)
+leftsv = svdz$u %*% diag(sqrt(svdz$d[1:2])) # U'
+rightsv = svdz$v %*% diag(sqrt(svdz$d[1:2])) # V'
+ll = max(abs(rightsv), abs(leftsv))
+plot(rbind(leftsv,rightsv), asp = 1, xlim = c(-ll,ll), ylim = c(-ll,ll), 
+     xlab = "SV1", ylab = "SV2", type = "n")
+abline(h=0,v=0)
+points(leftsv, col = 4, pch = 20)
+points(rightsv, col = 3, pch = 18)
+text(leftsv[-4,], dimnames(z)$tumor[-4], col = 4, pos=2, cex = 0.75)
+text(t(leftsv[4,]), dimnames(z)$tumor[4], col = 4, pos=4, cex = 0.75)
+text(rightsv[-2,], dimnames(z)$site[-2], col = 3, pos=2, cex = 0.75)
+text(t(rightsv[2,]), dimnames(z)$site[2], col = 3, pos=1, cex = 0.75)
+```
+
+先觀察單一變數 *tumor (site)* 的設定值，是否有特別遠離或是靠近原點的設定值：  
+
+(1) *tumor = freckle (site = head)* 特別遠離原點，代表這種設定值下的 conditional distribution 和 marginal distribution  (也就是在 independence 成立下的分布)，相差很遠  
+(2) *tumor = nodular* 距離原點相對較近，代表這種設定值下的 conditional distribution 和 marginal distribution 相差不遠  
+
+再來觀察是否有兩變數的組合距離很近且同時遠離原點，或是距離很遠且落在原點的兩側：  
+
+(1) *(freckle,head) , (superficial,extremity) , (indeterminate,trunk)* 這三種組合的兩變數都是彼此距離較近且遠離原點，代表這三種組合的 residual 數值都較大且大於零，也就是這些組合發生的機率大於 independent asumption 下所估計出的機率  
+(2) *(freckle,extremity) , (freckle,trunk) , (superficial,head)* 這三種組合的兩變數都是彼此距離較遠且落在原點兩側，代表這三種組合的 residual 數值都較大且小於零，也就是這些組合發生的機率小於 independent asumption 下所估計出的機率  
+
+
+
+## Problem 2.  
+
+
+```{r}
+cmob = read.table("cmob.txt")
+ct.2 = xtabs(y ~ class71 + class81, cmob)
+ct.2
+```
+
+(1) Check for symmetry :  
+
+Construct 21 levels symmetric factor
+
+```{r}
+symfac = factor(apply(cmob[,2:3],1,function(x) paste(sort(x),collapse="-")))
+matrix(symfac,6,6)
+```
+
+Fit GLM
+$$
+\begin{aligned}
+&Y_{ij}\ \sim\ \text{Poisson}(\mu_{ij})\\
+&\log(\mu_{ij})\ =\ \eta_{ij}\ \sim\ \text{sym-factor}
+\end{aligned}
+$$
+
+```{r}
+mod_2.1 = glm(y ~ symfac, family = poisson, cmob)
+summary(mod_2.1)
+```
+
+
+and do the deviance-based goodness-of-fit test
+
+```{r}
+pchisq(mod_2.1$deviance, mod_2.1$df.residual, lower.tail = F)
+```
+
+p-value $=\ P\left(\chi^2_{15}\ >\ D_S\right)\ =\ 9.053713e-105\ <\ 0.05$  
+$\Rightarrow$ Symmetry is not hold.  
+
+(2) Check for quasi-symmetry :  
+
+Fit GLM
+$$
+\begin{aligned}
+&Y_{ij}\ \sim\ \text{Poisson}(\mu_{ij})\\
+&\log(\mu_{ij})\ =\ \eta_{ij}\ \sim\ \text{class71}\ +\ \text{class81}\ +\ \text{sym-factor}
+\end{aligned}
+$$
+
+```{r}
+mod_2.2 = glm(y ~ class71 + class81 + symfac, family = poisson, cmob)
+summary(mod_2.2)
+```
+
+and do the deviance-based goodness-of-fit test
+
+```{r}
+pchisq(mod_2.2$deviance, mod_2.2$df.residual, low = F)
+```
+
+p-value $=\ P\left(\chi^2_{10}\ >\ D_S\right)\ =\ 2.167122e-22\ <\ 0.05$  
+$\Rightarrow$ Quasi-Symmetry is not hold.  
+
+(3) Check for marginal homogeneity :  
+
+Because there is no log-linear model that directly corresponds to marginal homogeneity and quasi-symmetry is also not hold, we do not have an appropriate and simple test for marginal homogeneity. We just check the two marginal distribution.  
+
+
+```{r}
+margin.table(ct.2, 1)
+margin.table(ct.2, 2)
+```
+
+可以看出從 1971 年到 1981 年，社會階層較高的男性 (I & II) 數量皆有所提升，而社會階層較低的男性 (IIIN , IV & V) 數量則有所減少，推測可能同樣這一群男性隨著這十年的時間推進，他們整體的社會階層有所上升，故 Marginal Homogeneity 有可能不成立。  
+
+
+
+(3) Check for quasi-independence :  
+
+Omit the diagonal data and fit GLM
+$$
+\begin{aligned}
+&Y'_{ij}\ \sim\ \text{Poisson}(\mu_{ij})\\
+&\log(\mu_{ij})\ =\ \eta_{ij}\ \sim\ \text{class71}\ +\ \text{class81}
+\end{aligned}
+$$
+
+```{r}
+mod_2.3 = glm(y ~ class71 + class81, subset = -c(1,8,15,22,29,36), family = poisson, cmob)
+summary(mod_2.3)
+```
+
+and do the deviance-based goodness-of-fit test  
+
+```{r}
+pchisq(mod_2.3$deviance, mod_2.3$df.residual, low = F)
+```
+
+p-value $=\ P\left(\chi^2_{19}\ >\ D_S\right)\ =\ 0\ <\ 0.05$  
+$\Rightarrow$ Quasi-Independence is not hold.  
+
+
+
+
+
+
+
+
+## Problem 3.  
+
+Take a look at the $3\times3$ contingency table
+
+```{r}
+death = read.table("death.txt")
+ftable(xtabs(y ~ victim + defend + penalty, death))
+```
+
+We have three 2-level factors in the data. Let's do backward model selection start from the most complex model, saturated model :
+$$
+\begin{aligned}
+&Y_{ijk}\ \sim\ \text{Poisson}(\mu_{ijk})\\
+&\log(\mu_{ijk})\ =\ \eta_{ijk}\ \sim\ \text{penalty}\ *\ \text{victim}\ *\ \text{defend}
+\end{aligned}
+$$
+and then do the deviance-based test comparing to other simpler models
+
+
+```{r}
+mod3_sat = glm(y ~ penalty*victim*defend, death, family = poisson)
+drop1(mod3_sat, test = "Chi")
+```
+We can see that the 3-factor interaction effect of *penalty:victim:defend* is not significant in the saturated model, so we can reduce to the uniform association model
+$$
+\begin{aligned}
+&Y_{ijk}\ \sim\ \text{Poisson}(\mu_{ijk})\\
+&\log(\mu_{ijk})\ =\ \eta_{ijk}\ \sim\ \left(\text{penalty}\ +\ \text{victim}\ +\ \text{defend}\right)^2
+\end{aligned}
+$$
+and then do the deviance-based test comparing to other simpler models
+
+```{r}
+mod3_ua = glm(y ~ (penalty+victim+defend)^2, death, family = poisson)
+drop1(mod3_ua, test = "Chi")
+```
+We can see that the 2-factor interaction effect *penalty:defend* is not significant in the uniform association model, so we can reduce to the conditional independence model 
+$$
+\begin{aligned}
+&Y_{ijk}\ \sim\ \text{Poisson}(\mu_{ijk})\\
+&\log(\mu_{ijk})\ =\ \eta_{ijk}\ \sim\ \text{penalty}\ +\ \text{victim}\ +\ \text{defend}\ +\ \text{penalty}:\text{victim}\ +\ \text{victim}:\text{defend}
+\end{aligned}
+$$
+and then do the deviance-based test comparing to other simpler models
+
+```{r}
+mod3_ci = glm(y ~ penalty*victim + victim*defend, death, family = poisson)
+drop1(mod3_ci, test = "Chi")
+```
+We can see that all the effects in the model are significant. Let's check the deviance-based goodness-of-fit test for the model.
+
+```{r}
+pchisq(mod3_ci$deviance,mod3_ci$df.residual, low = F)
+```
+$\Rightarrow$ p-value $=\ 0.3902578\ >\ 0.05$, so the model fits well to the data.  
+
+This conditional independence model means that *penalty* and *defend* are independent for given *victim*. The result can be seen in the below conditional probability table.
+
+
+```{r}
+round(prop.table(ftable(xtabs(y ~ victim + defend + penalty, death)),1),3)
+```
+
+
+
+
+
+
+
+
