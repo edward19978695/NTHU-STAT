@@ -1,0 +1,50 @@
+---
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1.5}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+## Problem 4.  
+Compute the sample covariance matrix for first five variables
+$$
+S\ =\ \frac{1}{130-1}\sum_{j=1}^{130}(x_j-\bar{x})(x_j-\bar{x})'
+$$
+
+
+Then compute the squared generalized distances
+$$
+d_j^2\ =\ (x_j-\bar{x})'S^{-1}(x_j-\bar{x})\ \ ,\ \ j=1,2,...,130
+$$
+and order them $d^2_{(1)}\ \leq\ d^2_{(2)}\ \leq\ ...\ \leq\ d^2_{(130)}$  
+
+Graph the Chi-square plot with pairs
+$$
+\left(q_{c.5}\left(\frac{j-0.5}{130}\right)\ ,\ d^2_{(j)}\right)\ \ ,\ \ j=1,2,...,130
+$$
+
+
+```{r echo=FALSE}
+library(latex2exp)
+data = read.table("T4-6.DAT")
+S = cov(data[,1:5])
+S_inv = solve(S)
+x_bar = apply(data[,1:5],2,mean)
+dj_square = apply(data[,1:5],1,function(xj) {
+    t(xj-x_bar) %*% S_inv %*% (xj-x_bar)
+})
+dj_square = sort(dj_square)
+sd_quantial = c()
+for (i in 1:130) {
+    sd_quantial[i] = qchisq((i-0.5)/130, 5)
+}
+par(mar = c(5,5,4,2))
+plot(sd_quantial, dj_square, main = "Chi-square Plot", 
+     xlab = TeX("$q_{c.5}((j-0.5)/130)$"), 
+     ylab = TeX("$d^2_{(j)}$"))
+```
+
+It looks like a straight line in the Chi-square plot, means that the first five columns (variables) are closed to multivariate normal distribution.  
