@@ -1,0 +1,65 @@
+---
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+### 6. Exercise 3.7  
+
+I take $\overline{X}\ =\ (0,0)'$ for example in the following graphics.  
+
+#### (i)  
+$$
+S\ =\ 
+\begin{bmatrix}
+5&4\\
+4&5
+\end{bmatrix}
+$$
+
+
+```{r fig.height=6, fig.width=6, message=FALSE, warning=FALSE}
+library(ellipse)
+library(latex2exp)
+plot.ellipse = function(cov, c) {
+    plot(ellipse(cov, centre = c(0,0), level = pchisq(c,2)), type = "l", lwd = 2)
+    points(0,0, pch = 16)
+    text(0.12,0,TeX("$\\bar{X}$"))}
+s1 = matrix(c(5,4,4,5),2,2)
+plot.ellipse(s1, 1)
+```
+
+
+\newpage
+#### (ii)  
+$$
+S\ =\ 
+\begin{bmatrix}
+5&-4\\
+-4&5
+\end{bmatrix}
+$$
+
+```{r fig.height=6, fig.width=6}
+s2 = matrix(c(5,-4,-4,5),2,2)
+plot.ellipse(s2, 1)
+```
+
+
+\newpage
+#### (iii)  
+$$
+S\ =\ 
+\begin{bmatrix}
+3&0\\
+0&3
+\end{bmatrix}
+$$
+
+```{r fig.height=6, fig.width=6}
+s3 = matrix(c(3,0,0,3),2,2)
+plot.ellipse(s3, 1)
+```
