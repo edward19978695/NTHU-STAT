@@ -1,0 +1,189 @@
+---
+title: "品質管制 Homework 4"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+    number_sections: true
+author: "110024516 統研碩一 邱繼賢"
+date: "2021 年 10 月 21 日"
+---
+
+\textbf{3.19}
+\textbf{(i)}  
+
+```{r echo=FALSE, message=FALSE, error=FALSE}
+df = read.table("ex35.dat.txt", header = T)
+data = data.matrix(df[, 1:5])
+datac = c(data)
+xbar = mean(datac)
+s = sd(datac)
+
+qqnorm(datac)
+qqline(datac)
+
+```
+The data are plotted against a theoretical normal distribution in such a way that the points should form an approximate straight line. Departures from this straight line indicates from normality. Thus, the combined sample has been checked for the normality. 
+
+
+
+
+\textbf{(ii)}  
+$\overline{X}\ =\ \frac{1}{50}\sum_{i=1}^{50}{X_i}\ =\ 35.3046$, and $S\ =\ \sqrt{\frac{1}{50-1}\sum_{i=1}^{50}{(X_i\ -\ \bar{X})^2}}\ \approx\ 0.9099$
+
+$P(LSL\ \leq\ X\ \leq\ USL)\ =\ P(\frac{LSL-\overline{X}}{S}\ \leq\ Z\ \leq\ \frac{USL-\overline{X}}{S})\\=\ \Phi(\frac{USL-\overline{X}}{S})\ -\ \Phi(\frac{LSL-\overline{X}}{S})\ \approx\ \Phi(2.9625)\ -\ \Phi(-2.5329)\ \approx\ 0.9928$
+```{r include=FALSE}
+pnorm((38-xbar)/s) - pnorm((33-xbar)/s)
+
+```
+
+
+\textbf{(iii)}  
+In Exercise 3.5 (i), $\overline{X}\ =\ 35.304,\ and \ \ \hat{\sigma}\ = \ \frac{\overline{R}}{d_1(5)}\ \approx\ 0.8650$
+
+$P(LSL\ \leq\ X\ \leq\ USL)\ =\ P(\frac{LSL-\overline{X}}{\hat{\sigma}}\ \leq\ Z\ \leq\ \frac{USL-\overline{X}}{\hat{\sigma}})\ \approx\ \Phi(3.1167)\ -\ \Phi(-2.6636)\ \approx\ 0.9952$
+
+
+```{r include=FALSE}
+xbar_2 = 35.304
+s_2 = 2.012/(2.326)
+pnorm((38-xbar_2)/s_2) - pnorm((33-xbar_2)/s_2)
+```
+
+
+
+\textbf{3.20}
+\textbf{(i)}  
+$LSL\ =\ 2100, \ USL\ =\ 2300, \ T\ =\ \frac{USL\ +\ LSL}{2}, \ m\ =\ 50, \ \overline{X}\ =\ 2250, \ s\ =\ 50\\\hat{C}_p\ =\ \frac{USL\ -\ LSL}{6s}\ \approx\ 0.6667 \ \\\hat{C}_{pl}\ =\ \frac{\overline{X}\ -\ LSL}{3s}\ =\ 1, \ \hat{C}_{pu}\ =\ \frac{USL\ -\ \overline{X}}{3s}\ \approx\ 0.3333\ \Rightarrow\ \hat{C}_{pk}\ =\ min(\hat{C}_{pl}, \ \hat{C}_{pu})\ =\ 0.3333\\ \hat{C}_{pm}\ =\ \frac{\hat{C}_p}{\sqrt{1+(\frac{\overline{X}\ -\ T}{s})^2}}\ \approx\ 0.4714$  
+Between $C_p\ and \ C_{pk}$, $C_{pk}$ is more appropriate to use in this case, because $\overline{X}\ \neq\ T$.   
+
+It is natural to observe that $P(LSL\ <\ X\ <\ USL\ \ |\ \ \overline{X}\ =\ T)\ >\ P(LSL\ <\ X\ <\ USL\ \ |\ \ \overline{X}\ \neq\ T)$, so we prefer to use $C_{pk}$ in this case.
+
+
+
+```{r include=FALSE}
+LSL = 2100
+USL = 2300
+T = (LSL + USL)/2
+d = (USL - LSL)/2
+m = 50
+xbar = 2250
+s = 50
+
+cp_hat = (USL - LSL)/(6*s)
+cpl_hat = (xbar - LSL)/(3*s)
+cpu_hat = (USL - xbar)/(3*s)
+cpk_hat = min(cpl_hat, cpu_hat)
+cpm_hat = cp_hat / sqrt(1+((xbar - T)/s)^2)
+```
+
+
+
+
+\textbf{(ii)}  
+A 95% confidence interval for $C_p$ is $$(\hat{C}_p\sqrt{\frac{\chi^2_{\frac{\alpha}{2}, m-1}}{m-1}},\ \hat{C}_p\sqrt{\frac{\chi^2_{1-\frac{\alpha}{2}, m-1}}{m-1}})\ \approx\ (0.5350, \ 0.7981)$$
+
+```{r include=FALSE}
+lower_bd = cp_hat * sqrt(qchisq(0.025, m-1)/(m-1))
+upper_bd = cp_hat * sqrt(qchisq(0.975, m-1)/(m-1))
+c(lower_bd, upper_bd)
+```
+
+
+
+
+\textbf{(iii)}  
+$P(X\ <\ LSL\ or \ X\ >\ USL\ \ |\ \ process\ IC)\ \\=\ P(Z\ <\ \frac{LSL\ -\ \overline{X}}{s})\ +\ P(Z\ >\ \frac{USL\ -\ \overline{X}}{s})\ =\ \Phi(-3)\ +\ (1\ -\ \Phi(1))\ \approx\ 0.1600$
+```{r include=FALSE}
+pnorm((LSL-xbar)/s) + 1 - pnorm((USL - xbar)/s)
+
+```
+
+
+
+\textbf{4.2}
+\textbf{(i)}  
+$k\ =\ 0.5, \ h\ = \ 3.502, \ \mu_0\ =\ 0$  
+The charting statistic $C_n\ =\ \sum_{i=1}^{20}{(X_i\ -\ \mu_0)}$
+
+```{r echo=FALSE, message=FALSE, error=FALSE}
+data = read.csv("data4-2.csv", header = T)
+mu_0 = 0
+k = 0.5
+h = 3.502
+sum = 0
+for (i in 1:20) {
+  sum = sum + data$X_i[i]
+  data$C_i[i] = sum
+}
+
+ii = seq(1,20)
+mask1 = rep(0, 20)
+mask2 = rep(0, 20)
+plot(ii, data$C_i, type="o",lty=1,pch=16,xlab="n",
+     ylab=expression(C[n]),mgp=c(2,1,0),xlim=c(0,21), 
+     ylim=c(-3,30),cex=0.8)
+
+for (i in 1:20) {
+  mask1[i] = data$C_i[20] - h + (i - 20)*0.5
+  mask2[i] = data$C_i[20] + h + (20 - i)*0.5
+}
+
+lines(ii,mask1,type="l",lty=1,cex=2.5)
+lines(ii,mask2,type="l",lty=2,cex=2.5)
+lines(rep(20,2),c(data$C_i[20]-h,data$C_i[20]+h),lty=3,cex=2.5)
+lines(rep(1,2),c(mask1[1],mask2[1]),lty=3,cex=2.5)
+
+cord.x <- c(1,1,20,20)
+cord.y <- c(mask1[1],mask2[1],data$C_i[20]+h,data$C_i[20]-h)
+polygon(cord.x,cord.y,density=7,angle=135,border=NA,lty=1,cex=0.6)
+
+title("CUSUM chart", cex = 0.9)
+```
+The CUSUM chart detects a positive mean shift occurs before n = 20, because there are some values of the charting statistics falling below that half-line.
+
+Then, we choose the time point, which is farthest away from the V-mask, is used as the estimate of $\tau$$$\Rightarrow\ \hat{\tau}\ =\ 10$$
+
+After the estimate of $\tau$, $\hat{\tau}$ is obtained, $\delta$ can be estimated by $$\Rightarrow\ \hat{\delta}\ =\ \frac{C_{20}\ -\ C_{\hat{\tau}}}{20\ -\ \hat{\tau}}\ =\ \frac{14.34\ -\ (-1.81)}{20\ -\ 10}\ =\ 1.615$$
+
+
+
+\textbf{(ii)}  
+$C_n^+\ =\ max(0,\ C_{n-1}^+\ +\ (X_n\ -\ \mu_0)\ -\ k)\ ,\ \ where\ \ C_0^+\ =\ 0$
+
+```{r echo=FALSE, message=FALSE, error=FALSE}
+data$C_plus[1] = max(0, 0+data$X_i[1] - k )
+for (i in 2:20) {
+  data$C_plus[i] = max(0, data$C_plus[i-1]+data$X_i[i]-k)
+}
+
+
+plot(ii, data$C_plus,type="o",lty=1,pch=16,xlab="n",
+     ylab=expression(C[n]^{"+"}),mgp=c(2,1,0),xlim=c(0,21), 
+     ylim=c(0,13),cex=0.8)
+lines(ii,rep(h,20),lty=2,cex=0.8)
+title("DI form CUSUM chart", cex = 0.9)
+```
+This kind of CUSUM chart also gives a signal of an upward mean shift because $$C_n^+\ >\ h\ =\ 3.502,\ for \ n\ \geq\ 13$$ It shows the same results in part(i). 
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
