@@ -1,0 +1,191 @@
+---
+title: "品質管制 Homework 7"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+    number_sections: true
+author: "110024516 統研碩一 邱繼賢"
+date: "2021年11月13日"
+---
+\textbf{4.13}  
+```{r include=FALSE}
+compute_k = function(sigma_0, sigma_1) {
+    return((2*log(sigma_0/sigma_1))/((sigma_0/sigma_1)^2-1))
+}
+```
+
+\textbf{(i)}$\ \sigma_0\ =\ 1,\ \sigma_1\ =\ 2,\ ARL_0\ =\ 370$  
+To detect the upward variance shift, the CUSUM chart is:
+\[
+\begin{aligned}
+&C_n^+=max(0\ ,\ C_{n-1}^+\ +\ (\frac{X_n-\mu_0}{\sigma_0})^2\ -\ k^+)\ ,\ \text{where}\ C_0^+\ =\ 0\\
+&\text{and}\ k^+\ =\ \frac{2\ log(\sigma_0/\sigma_1)}{(\sigma_0/\sigma_1)^2-1}\ =\ 1.8484\\
+&\text{This chart gives a signal of upward variance shift if}\ C_n^+>h_U\\
+&\text{Where}\ h_U\ =\ 8.97\ \text{is computed by}\ ANYGETH.EXE\\
+&\therefore\ \text{The optimal values of}\ (k^+,h_U)\ =\ (1.848,8.97)
+\end{aligned}
+\]
+```{r include=FALSE}
+k_plus1 = compute_k(1, 2)
+h_u1 = 8.970
+```
+
+
+\textbf{(ii)}$\ \sigma_0\ =\ 1,\ \sigma_1\ =\ 0.5,\ ARL_0\ =\ 370$  
+To detect the downward variance shift, the CUSUM chart is:
+\[
+\begin{aligned}
+&C_n^-=min(0\ ,\ C_{n-1}^-\ +\ (\frac{X_n-\mu_0}{\sigma_0})^2\ -\ k^-)\ ,\ \text{where}\ C_0^-\ =\ 0\\
+&\text{and}\ k^-\ =\ \frac{2\ log(\sigma_0/\sigma_1)}{(\sigma_0/\sigma_1)^2-1}\ =\ 0.4621\\
+&\text{This chart gives a signal of downward variance shift if}\ C_n^-<h_L\\
+&\text{Where}\ h_L\ =\ -2.843\ \text{is computed by}\ ANYGETH.EXE\\
+&\therefore\ \text{The optimal values of}\ (k^-,h_L)\ =\ (0.4621,-2.843)
+\end{aligned}
+\]
+
+```{r include=FALSE}
+k_minus2 = compute_k(1, 0.5)
+h_l2 = -2.843
+```
+
+
+\textbf{(iii)}$\ \sigma_0\ =\ 0.5,\ \sigma_1\ =\ 1,\ ARL_0\ =\ 370$  
+To detect the upward variance shift, the CUSUM chart is:
+\[
+\begin{aligned}
+&C_n^+=max(0\ ,\ C_{n-1}^+\ +\ (\frac{X_n-\mu_0}{\sigma_0})^2\ -\ k^+)\ ,\ \text{where}\ C_0^+\ =\ 0\\
+&\text{and}\ k^+\ =\ \frac{2\ log(\sigma_0/\sigma_1)}{(\sigma_0/\sigma_1)^2-1}\ =\ 1.8484\\
+&\text{This chart gives a signal of upward variance shift if } C_n^+>h_U\\
+&\text{Where}\ h_U\ =\ 8.906135\ \text{is computed by the bisection simulation}\\
+&and\ the\ last\ ARL_0\ =\ 369.67\\
+&\therefore\ \text{The optimal values of}\ (k^+,h_U)\ =\ (1.848,8.906135)
+\end{aligned}
+\]
+
+```{r include=FALSE}
+k_plus3 = compute_k(0.5, 1)
+h_u3 = 2.243
+```
+
+
+
+\textbf{4.14}  
+計算$k^-\ =\ \frac{2\ log(\sigma_1/\sigma_0)\ \sigma_0^2\ \sigma_1^2}{\sigma_1^2\ -\ \sigma_0^2}\ =\ \frac{2\ log(0.5/1)\ 0.25}{0.25\ -\ 1}\ =\ 0.4621$，再使用$ANYGETH.EXE$軟體套件計算$h_L\ =\ -0.681$
+```{r}
+k_minus = (1*0.25*log(0.25/1))/(0.25-1)
+h_l = -0.681
+```
+
+匯入資料並計算\[C_n^-\ =\ min(0, C_{n-1}^-\ +\ S_n^2\ -\ k^-),\ where\ C_0^-\ =\ 0\]其結果呈現如下
+```{r warning=FALSE}
+library(knitr)
+data = read.table("ex35.dat.txt", header = T)
+data$C_n[1] = min(0, 0+data$s[1]^2-k_minus)
+for (i in 2:10) {
+    data$C_n[i] = min(0, data$C_n[i-1]+data$s[i]^2-k_minus)
+}
+
+kable(data.frame(C_n = round(data$C_n, 4)), row.names = 1:10)
+```
+繪製 CUSUM chart 
+
+```{r}
+ii = seq(1,10)
+par(mfrow = c(1,1), mar=c(4,4,1,6))
+plot(ii,data$C_n,type="o",lty=1,pch=16,xlab="n",
+     ylab=expression(C[n]^{"-"}),mgp=c(2,1,0),xlim=c(1,10), 
+     ylim=c(-0.8,0),cex=0.8)
+lines(ii,rep(h_l,10),lty=2,cex=0.8)
+axis(4, at = h_l, labels = "h_l = -0.681", cex=0.8,las=1)
+title("CUSUM chart (DI form)")
+```
+In the 10 samples from a process producing bearings, the CUSUM chart does not give any signals. Therefore, we can not detect downward variance shifts from the observed data. 
+
+
+
+
+\textbf{4.15}  
+\[
+\begin{aligned}
+&\because\ \frac{1}{ARL_{0,J}}\ \approx\ \frac{1}{ARL_{0,M}}\ +\ \frac{1}{ARL_{0,V}},\ and\ ARL_{0,J}\ =\ 200\\
+&\Rightarrow\ Make\ \ that\ \ ARL_{0,M}\ =\ ARL_{0,V}\ =\ 400\\
+&And\ \ (k,h)\ =\ (0.5,0.128),\ \ (k^+,h_U)\ =\ (0.4621,0.633)\\
+&(Note\ \ that\ \ k\ =\ \frac{\mu_1-\mu_2}{2}\ =\ 0.5\ ,\ \\
+&and\ \ h\ =\ 0.128\ \ by\ the\ software\ package\ ANYGETH.EXE\\
+&k^+\ =\ \frac{2\sigma_0\sigma_1log(\sigma_1/\sigma_0)}{\sigma_1^2-\sigma_0^2}\ =\ 0.4621\ ,\ \\&and\ \ h_U\ =\ 0.633\ by\ the\ software\ package\ ANYGETH.EXE)
+\end{aligned}
+\]
+
+```{r}
+k_mean = 0.5
+h_mean = 0.128
+
+k_vplus = (2*0.25*1*log(1/0.5))/(1-0.25)
+h_vplus = 0.633
+```
+
+匯入資料並計算
+$$
+\left\{
+\begin{aligned}
+&CUSUM-M:C_n^+\ =\ max(0\ ,\ C_{n-1}^++(\overline{X}_n-\mu_0)-k)\ ,\ where\ \ C_0^+\ =\ 0\\
+&CUSUM-V:C_n^+\ =\ max(0\ ,\ C_{n-1}^++S_n^2-k^+)\ ,\ where\ \ C_0^+\ =\ 0
+\end{aligned}
+\right.
+$$
+其結果呈現如下
+```{r warning=FALSE}
+data415 = read.table("ex415.dat.txt", header = T)
+data415$C_mean[1] = max(0, 0+(data415$xbar[1]-1)-k_mean)
+for (i in 2:24) {
+    data415$C_mean[i] = max(0, data415$C_mean[i-1]+data415$xbar[i]-1-k_mean)
+}
+
+data415$C_var[1] = max(0,0+data415$xstd[1]^2-k_vplus)
+for (i in 2:24) {
+    data415$C_var[i] = max(0, data415$C_var[i-1]+data415$xstd[i]^2-k_vplus)
+}
+C = data.frame(C_n_M = data415$C_mean, 
+               C_n_V = data415$C_var)
+kable(round(C, 4), row.names = 1:24)
+```
+
+繪製 CUSUM-M 和 CUSUM-V chart
+```{r}
+par(mfcol = c(1,2), mar=c(5,3.5,4,5.5))
+ii = seq(1,24)
+plot(ii,data415$C_mean,type="o",lty=1,pch=16,xlab="n",
+     ylab=expression(C[n]^{"+"}),mgp=c(2,1,0),xlim=c(1,24), 
+     ylim=c(0,6),cex=0.8)
+lines(ii,rep(h_mean,24),lty=2,cex=0.8)
+axis(4, at=h_mean,labels="h = 0.128",cex=0.8,las=1)
+title("CUSUM-M chart")
+
+
+plot(ii, data415$C_var, type="o",lty=1,pch=16,xlab="n",
+     ylab=expression(C[n]^{"+"}),mgp=c(2,1,0),xlim=c(1,24), 
+     ylim=c(0,10),cex=0.8)
+lines(ii, rep(h_vplus, 24), lty=2,cex=0.8)
+axis(4, at = h_vplus, labels = "h_u = 0.633", cex=0.8,las=1)
+title("CUSUM-V chart")
+```
+It can be seen that the CUSUM-M chart gives a signal at the 13th time point, and the CUSUM-V chart also gives a signal at the 13th time point.
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
