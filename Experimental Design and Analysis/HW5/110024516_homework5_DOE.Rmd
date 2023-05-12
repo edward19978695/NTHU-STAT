@@ -1,0 +1,358 @@
+---
+title: "Experimental Design and Analysis Homework 5"
+author: "110024516 邱繼賢"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+  - \linespread{1.5}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+## Problem 1. (3-26)  
+此實驗總共有：  
+
+(1) 四個 two-level treatment factors，分別為 *shield, knob a, knob b, knob c*  
+(2) 一個 four-level block factor *day* with block size = 16  
+
+因此我們可以將全部 $2^4$ level combinations 安排進每一天 (block) 的實驗之中，但是本實驗主要的目的是探討哪種 *knobs (a,b,c)* 的設定組合在兩種不同的 *shield* 可以造成最大的 difference，考慮到日照強度會隨著時間有顯著變化，在相同的 *knobs* level combination 下，搭配兩種 *shield* 所執行的兩次實驗應該安排為連續進行，故實驗的設計可以將 30 分鐘為一單位，將一天分為 8 等分，把 $2^3$ 種 *knobs (a,b,c)* 的 level combinations 隨機安排進去，然後再將 *shield* I & II 以各 15 分鐘分配給八個 *knobs* 所形成的 level combinations，在相同的 *knobs* 設定值之下，*shield* I & II 要以 balanced randomize 的方式安排進入實驗的四天 (隨機的兩天先 I 後 II，剩餘兩天先 II 後 I)  
+
+此實驗設計為一個 Split-plot design :  
+
+(1) 3 whole-plot factors : *knob a, knob b, knob c*  
+(2) 1 sub-plot factor : *shield*  
+(3) 1 block factor : *day*  
+(4) whole-plot experimental unit : 30 min  
+(5) sub-plot experimental unit : 15 min  
+
+
+\newpage
+level combinations for whole-plot factors :  
+
+| **knob a** | **knob b** | **knob c** | **level combination** |
+|:----------:|:----------:|:----------:|:---------------------:|
+| +          | +          | +          | 1                     |
+| +          | +          | -          | 2                     |
+| +          | -          | +          | 3                     |
+| +          | -          | -          | 4                     |
+| -          | +          | +          | 5                     |
+| -          | +          | -          | 6                     |
+| -          | -          | +          | 7                     |
+| -          | -          | -          | 8                     |
+
+Design plan of four successive days :  
+
+| **Run** | **Day 1**     | **Day 2**     | **Day 3**     | **Day 4**     |
+|:-------:|:-------------:|:-------------:|:-------------:|:-------------:|
+| 1       | (1,I)  (1,II) | (1,I)  (1,II) | (1,II)  (1,I) | (1,II)  (1,I) |
+| 2       | (2,I)  (2,II) | (2,II)  (2,I) | (2,II)  (2,I) | (2,I)  (2,II) |
+| 3       | (3,I)  (3,II) | (3,II)  (3,I) | (3,I)  (3,II) | (3,II)  (3,I) |
+| 4       | (4,II)  (4,I) | (4,II)  (4,I) | (4,I)  (4,II) | (4,I)  (4,II) |
+| 5       | (5,II)  (5,I) | (5,I)  (5,II) | (5,I)  (5,II) | (5,II)  (5,I) |
+| 6       | (6,I)  (6,II) | (6,II)  (6,I) | (6,II)  (6,I) | (6,I)  (6,II) |
+| 7       | (7,II)  (7,I) | (7,I)  (7,II) | (7,II)  (7,I) | (7,I)  (7,II) |
+| 8       | (8,I)  (8,II) | (8,I)  (8,II) | (8,II)  (8,I) | (8,II)  (8,I) |
+
+每天實驗進行的順序應再進行 randomize，此處僅為展示方便  
+
+建構模型以供分析：
+$$
+y\ =\ \eta\ +\ \tau\ +\ \alpha\ +\ \epsilon^W\ +\ \beta\ +\ (\alpha\beta)\ +\ \epsilon^S
+$$
+Terms related to the whole-plot :  
+
+(1) $\tau$ : block (*day*) effect  
+(2) $\alpha$ : all factorial effects of whole-plot factors (*knob a,b,c*)  
+(3) $\epsilon^W$ : whole-plot error  
+
+Terms related to the sub-plot :  
+
+(1) $\beta$ : all factorial effects of sub-plot factor (*shield*)  
+(2) $(\alpha\beta)$ : all interaction effects of whole-plot and sub-plot factors (*knob a,b,c* $\times$ *shield*)  
+(3) $\epsilon^S$ : sub-plot error  
+
+
+
+
+\newpage
+## Problem 3. (4-11)  
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(knitr)
+task_data = read.table("TaskEfficiency.txt")
+colnames(task_data) = c("setup", "flasher", "inertia", "task", "time", "order")
+kable(task_data)
+```
+
+
+### (a)  
+Main effect of task
+$$
+\begin{aligned}
+&ME(\text{task})\ =\ \bar{z}(\text{task}=Y)\ -\ \bar{z}(\text{task}=Z)\\
+=\ &\frac{1}{4}(11+12+10+11)\ -\ \frac{1}{4}(16+14+15+19)\ =\ -5
+\end{aligned}
+$$
+
+```{r}
+(11+12+10+11)/4 - (16+14+15+19)/4
+```
+
+### (b)  
+Construct linear model for three treatment factors : *flasher (A) , inertia (B) , task (C)*
+$$
+\text{time}\ =\ X\beta\ +\ \epsilon
+$$
+where $X$ is the $2^3$ full factorial design  
+Then the factorial effects
+$$
+\hat{\theta}\ =\ 2\hat{\beta}
+$$
+
+```{r}
+options(contrasts=c("contr.sum","contr.poly"))
+mod3.1 = lm(time ~ flasher*inertia*task, task_data)
+factorial_effect = coef(mod3.1)[-1]*2
+names(factorial_effect) = c("A","B","C","AB","AC","BC","ABC")
+"halfnorm" <- function (x, nlab = 2, labs = as.character(1:length(x)), ylab = "Sorted Data") {
+    x <- abs(x)
+    labord <- order(x)
+    x <- sort(x)
+    i <- order(x)
+    n <- length(x)
+    ui <- qnorm((n + 1:n)/(2 * n + 1))
+    plot(ui, x[i], xlab = "Half-normal quantiles", ylab = ylab, ylim=c(0,max(x)),
+         type = "n")
+    if(nlab < n)
+        points(ui[1:(n - nlab)], x[i][1:(n - nlab)])
+    text(ui[(n - nlab + 1):n], x[i][(n - nlab + 1):n], labs[labord][(n - nlab + 1):n])
+}
+halfnorm(factorial_effect, nlab = length(factorial_effect), 
+         labs = names(factorial_effect), ylab = "Absolute Effect")
+```
+
+By the half-normal plot above, we can see that only the main effect of factor *task (C)* is relatively significant.  
+
+Let's try Lenth's method
+$$
+PSE\ =\ 1.5\times \text{median}_{\left\{|\hat{\theta}_i|<2.5s_0\right\}}|\hat{\theta}_i|\ =\ 2.5
+$$
+where
+$$
+s_0\ =\ 1.5\times\ \text{median}|\hat{\theta}_i|\ =\ 2.5
+$$
+```{r}
+s0 = 1.5*median(abs(factorial_effect))
+pse = 1.5*median(abs(factorial_effect[abs(factorial_effect)<2.5*s0]))
+```
+
+Compute test statistic
+$$
+t_{PSE,i}\ =\ \frac{\hat{\theta}_i}{PSE}
+$$
+
+```{r}
+round(factorial_effect/pse, 4)
+```
+
+If $|t_{PSE,i}|$ exceeds the critical value $IER_{0.1}\ =\ 1.71$, we conclude that factorial effect is significant.  
+The main effect of factor *task* is significant under Lenth's method. The result is the same with the half-normal plot.  
+
+
+### (c)  
+$$
+\begin{aligned}
+&\hat{\theta}_C\ =\ \frac{1}{4}(z_1+z_2+z_3+z_4)\ -\ \frac{1}{4}(z_5+z_6+z_7+z_8)\\
+\Rightarrow\ &Var\left(\hat{\theta}_C\right)\ =\ \frac{1}{16}\sum_{i=1}^8Var(z_i)\ =\ \frac{1}{16}(4\times1^2\ +\ 4\times4^2)\ =\ 4.25
+\end{aligned}
+$$
+
+
+
+
+
+## Problem 4. (4-14)  
+### (a)  
+No, they can't. Because the effects of width and filler are totally aliasing.  
+
+### (b)  
+They can do the $2^2$ factorial design as below design matrix  
+
+| Run | Part Width | Filler |
+|:---:|:----------:|:------:|
+| 1   | 36         | 40     |
+| 2   | 50         | 20     |
+| 3   | 36         | 20     |
+| 4   | 50         | 40     |
+
+which is an orthogonal array with strength 2  
+
+
+### (c)  
+They have to add more than 2 additional runs if they want to estimate all main and interaction effects. Namely construct a $2^3$ full factorial design whose design matrix is an orthogonal array with strength 3.  
+
+| Run | Part Width | Filler | Temperature |
+|:---:|:----------:|:------:|:-----------:|
+| 1   | 36         | 40     | 20          |
+| 2   | 50         | 20     | 20          |
+| 3   | 36         | 20     | 40          |
+| 4   | 50         | 40     | 40          |
+| 5   | 36         | 40     | 20          |
+| 6   | 50         | 20     | 20          |
+| 7   | 36         | 20     | 40          |
+| 8   | 50         | 40     | 40          |
+
+
+However, if we assume that the interaction among the three factors can be neglected and estimating only all main effects is their purpose, they can just add 2 additional runs in the design plan.  
+
+| Run | Part Width | Filler | Temperature |
+|:---:|:----------:|:------:|:-----------:|
+| 1   | 36         | 40     | 20          |
+| 2   | 50         | 20     | 20          |
+| 3   | 36         | 20     | 40          |
+| 4   | 50         | 40     | 40          |
+
+which is still an orthogonal array with strength 2, and it is enough to estimate the main effects.  
+
+
+## Problem 5. (4-16)  
+### (a)  
+Construct location model and dispersion model
+$$
+\bar{y}\ =\ X\beta\ +\ \epsilon\ \ ,\ \ \ln s^2\ =\ X\gamma\ +\ \delta
+$$
+where $X$ is the $2^3$ full factorial design.  
+
+Then the factorial effects for location and dispersion effects are
+$$
+\hat{\theta}\ =\ -2\hat{\beta}\ \ ,\ \ \hat{\psi}\ =\ -2\hat{\gamma}
+$$
+the negative sign is because the signs of sum coding in model matrix and $(-,+)$ levels for the factors are just the opposite.  
+
+```{r}
+drive_data = read.table("DriveShaft.txt")
+colnames(drive_data) = c("run", "A", "B", "C", "y1", "y2", "y3", "y4", "y5")
+y_bar = apply(drive_data[,5:9],1,mean)
+s_square = apply(drive_data[,5:9],1,var)
+drive_data = drive_data %>% mutate(y_bar, s_square)
+options(contrasts=c("contr.sum","contr.poly"))
+mod_loc = lm(y_bar ~ A*B*C, drive_data)
+mod_dis = lm(log(s_square) ~ A*B*C, drive_data)
+loc_effect = -coef(mod_loc)[-1]*2 ; names(loc_effect) = c("A","B","C","AB","AC","BC","ABC")
+loc_effect
+dis_effect = -coef(mod_dis)[-1]*2 ; names(dis_effect) = c("A","B","C","AB","AC","BC","ABC")
+round(dis_effect,4)
+```
+
+
+Let's check the significance of location and dispersion effects :  
+
+(1) Half-normal plot method  
+
+
+```{r}
+library(latex2exp)
+par(mfrow = c(1,2))
+halfnorm(loc_effect, nlab = 3, labs = c("A","B","C","AB","AC","BC","ABC"), 
+         ylab = "Absolute Effect")
+title(TeX("$\\bar{y}$"))
+halfnorm(dis_effect, nlab = 3, labs = c("A","B","C","AB","AC","BC","ABC"), 
+         ylab = "Absolute Effect")
+title(TeX("$ln\ s^2$"))
+```
+
+For $\bar{y}$, main effects of B and C are significant. For $\ln s^2$, only the main effect of A looks slightly significant.  
+
+(2) Lenth's method  
+Following the same step in **(4-11)** to compute the test statistics $\frac{\hat{\theta}}{PSE_{\hat{\theta}}}$ and $\frac{\hat{\psi}}{PSE_{\hat{\psi}}}$
+
+```{r}
+s0_loc = 1.5*median(abs(loc_effect))
+pse_loc = 1.5*median(abs(loc_effect[abs(loc_effect)<2.5*s0_loc]))
+round(loc_effect/pse_loc,4)
+```
+
+
+```{r}
+s0_dis = 1.5*median(abs(dis_effect))
+pse_dis = 1.5*median(abs(dis_effect[abs(dis_effect)<2.5*s0_dis]))
+round(dis_effect/pse_dis,4)
+```
+
+If $|t_{PSE,i}|$ exceeds the critical value $IER_{0.1}\ =\ 1.71$, we conclude that factorial effect is significant.  
+For $\bar{y}$, the main effects of B and C are significant. For $\ln s^2$, no effects look significant, only the test statistic of the main effect A slightly closed to the critical value.  
+
+
+### (b)  
+Fit the location model and dispersion model
+$$
+\begin{aligned}
+&\hat{\bar{y}}\ =\ \hat{\beta}_0\ +\ \frac{1}{2}\hat{\theta}_Bx_B\ +\ \frac{1}{2}\hat{\theta}_Cx_C\ =\ 65.42\ -\ 6.8x_B\ +\ 7.3x_C\\
+&\ln \hat{s}^2\ =\ \hat{\gamma}_0\ +\ \frac{1}{2}\hat{\psi}_Ax_A\ =\ 3.8714225\ -\ 0.9241892x_A
+\end{aligned}
+$$
+where
+$$
+\left\{
+\begin{aligned}
+&x_A\ =\ -1\ \ ,\ \ \text{if}\ \ A\ =\ \#5023\\
+&x_A\ =\ \ \ \ \ \ 1\ \ ,\ \ \text{if}\ \ A\ =\ \#5074
+\end{aligned}
+\right.\ \ ,\ \ 
+\left\{
+\begin{aligned}
+&x_B\ =\ -1\ \ ,\ \ \text{if}\ \ B\ =\ 800\\
+&x_B\ =\ \ \ \ \ \ 1\ \ ,\ \ \text{if}\ \ B\ =\ 1000
+\end{aligned}
+\right.\ \ ,\ \ 
+\left\{
+\begin{aligned}
+&x_C\ =\ -1\ \ ,\ \ \text{if}\ \ C\ =\ 50\\
+&x_C\ =\ \ \ \ \ \ 1\ \ ,\ \ \text{if}\ \ C\ =\ 80
+\end{aligned}
+\right.
+$$
+
+It is appropriate to use the two-step procedure because there exist two adjustment factors B and C.  
+
+(1) Choose $A\ =\ \#5074$ to minimize $Var(y_x)$, then the predicted variance
+$$
+\hat{\sigma}^2\ =\ \exp\left[3.8714225\ -\ 0.9241892(1)\right]\ =\ 19.05317
+$$
+
+(2) Choose $x_B$ and $x_C$ to satisfy $75\ =\ 65.42\ -\ 6.8x_B\ +\ 7.3x_C$. For example
+$$
+\left(x_B\ ,\ x_C\right)\ =\ (-1\ ,\ 0.3808219)\ \Leftrightarrow\ \left(B\ ,\ C\right)\ =\ (800\ ,\ 70.71233)
+$$
+
+
+
+
+
+
+
+
+## Problem 6. (4-20)  
+The first blocking scheme $B_{I}$
+$$
+\begin{aligned}
+&B_1=126\ ,\ B_2=136\ ,\ B_3=346\ ,\ B_4=456\ ,\ B_{12}=23\ ,\ B_{13}=1234\ ,\ B_{14}=1245\ ,\\
+&B_{23}=14\ ,\ B_{24}=1345\ ,\ B_{34}=35\ ,\ B_{123}=246\ ,\ B_{124}=23456\ ,\ B_{134}=12356\ ,\ B_{234}=156\ ,\ B_{1234}=25\\
+\Rightarrow\ &g\left(B_I\right)\ =\ (0,4,6,3,2,0)
+\end{aligned}
+$$
+
+The second blocking scheme $B_{II}$
+$$
+\begin{aligned}
+&B_1=136\ ,\ B_2=1234\ ,\ B_3=3456\ ,\ B_4=123456\ ,\ B_{12}=246\ ,\ B_{13}=145\ ,\ B_{14}=245\ ,\\
+&B_{23}=1256\ ,\ B_{24}=56\ ,\ B_{34}=12\ ,\ B_{123}=235\ ,\ B_{124}=135\ ,\ B_{134}=236\ ,\ B_{234}=34\ ,\ B_{1234}=146\\
+\Rightarrow\ &g\left(B_{II}\right)\ =\ (0,3,8,3,0,1)
+\end{aligned}
+$$
+
+Notice that $g_2(B_I)\ >\ g_2(B_{II})$, so scheme $B_{II}$ is said to have less aberration than scheme $B_I$. It is clear that scheme $B_{II}$ sacrifies less number of two-factor interaction than scheme $B_I$. By the effect hierarchy principle, the second scheme $B_{II}$ is better.  
+
+
