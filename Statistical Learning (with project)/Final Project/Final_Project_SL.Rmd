@@ -1,0 +1,1132 @@
+---
+title: "Statistical Learning Final Project"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{微軟正黑體}
+author: "廖偉傑、邱繼賢、邱婉如"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: true
+      smooth_scroll: false
+    code_folding: hide
+    latex_engine: xelatex
+---
+
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(summarytools)
+library(ggplot2)
+library(GGally)
+library(ggpubr)
+library(corrplot)
+library(psych)
+```
+
+# Data Preprocess
+
+```{r}
+mushroom_data = read.csv("secondary_data.csv", sep = ";")
+# view(dfSummary(mushroom_data))
+dim(mushroom_data)
+```
+
+```{r}
+mushroom_data[mushroom_data==""] = NA
+idx_factor_variable = c(1,3:9,12:21)
+for (col in idx_factor_variable) {
+    mushroom_data[,col] = as.factor(mushroom_data[,col])
+}
+# view(dfSummary(mushroom_data))
+```
+
+
+
++ 總共 61069 筆觀測值，21 個變數  
++ response variable : *class* (2 levels)  
++ 變數 *cap.diameter, stem.height, 	stem.width* 為連續型變數，其餘皆為類別型變數  
++ 變數 *cap.surface*(23.1%), *gill.attachment*(16.2%), *gill.spacing*(41.0%), *stem.root*(84.4%), *stem.surface*(62.4%), *veil.type*(94.8%), *veil.color*(87.9%), *ring.type*(4.0%), *spore.print.color*(89.6%) 有部分缺失值  
+
+```{r}
+summary(mushroom_data$veil.type)
+```
+
+
+先移除變數 *veil.type*，因為此變數除了 NA 值只有 1 level，無法提供任何資訊  
+
+```{r}
+mushroom_data = mushroom_data[,-15]
+```
+
+
+變數 *gill.spacing, stem.root, stem.surface, veil.color, spore.print.color* 缺失值比例也較高 (> 40%)，可以選擇刪除這些變數  
+
+```{r}
+idx_remove = c(8,12,13,15,18)
+mushroom_data = mushroom_data[,-idx_remove]
+dim(mushroom_data)
+```
+
+剩餘 15 個變數  
+(依舊有些變數具有 NA 值，先不處理，就看後續使用的模型能否對有 missing value 的資料分析，不行就 na.omit 掉)  
+
+```{r}
+# Save cleaned data
+write.csv(mushroom_data, "secondary_data_clean.csv", row.names = F)
+```
+
+
+變數 *ring.type* missing value 只有 4\%，故直接移除其觀測值  
+
+```{r}
+mushroom_data = mushroom_data[!is.na(mushroom_data$ring.type),]
+dim(mushroom_data)
+```
+
+
+
+
+
+# EDA
+
+
+```{r}
+# ggpairs(mushroom_data)
+```
+
+## Response variable  
+
++ *class* : 2 levels nomial variable
+
+```{r}
+prob_ = mean(mushroom_data$class=="p")
+ggplot(mushroom_data) + 
+    geom_bar(aes(x = class, fill = class), alpha = 0.7)
+```
+
+
+
+有毒的蘑菇(*class*=p)在資料中總數略多(56.02\%)，但差距不大，沒有 imbalance 現象  
+
+## Predictor vairables  
+### Continuous variables  
+
++ *cap.diameter* : 蘑菇傘蓋直徑(cm)  
++ *stem.height* : 蘑菇莖高度(cm)  
++ *stem.width* : 蘑菇莖寬度(mm)  
+
+
+
+
+```{r}
+p1 = ggplot(mushroom_data, 
+            aes(x = cap.diameter, fill = class)) + 
+    geom_density(alpha = 0.5) 
+p2 = ggplot(mushroom_data, 
+            aes(x = stem.height, fill = class)) + 
+    geom_density(alpha = 0.5)
+p3 = ggplot(mushroom_data, 
+            aes(x = stem.width, fill = class)) + 
+    geom_density(alpha = 0.5)
+ggarrange(p1,p2,p3, ncol = 2, nrow = 2, 
+          common.legend = T, legend = "right")
+```
+
+
++ 可食用的蘑菇 (*class*=e)，平均上來說蘑菇整體大小應該較大，但也不是很明顯  
+
+
+```{r}
+cor_ = cor(mushroom_data[,c(2,9,10)])
+corrplot(cor_)
+```
+
++ 三個連續型變數間皆是正相關，他們都可以反映蘑菇的大小  
++ *cap.diameter* 和 *stem.width* 之間有較強的正相關，推測是要有夠粗的莖才能撐住較大的傘頂，建模時可能會有共線性  
+
+
+
+### Catagorical variables  
+
+觀察各類別變數不同設定值下對 *class* 的數量及比例
+
+#### 蘑菇傘蓋(cap)特徵：
+
++ *cap.shape* : 蘑菇傘形狀 (7 levels)  
+
+| b         | c             | x           | f          | s            | p              | o          |
+|-----------|---------------|-------------|------------|--------------|----------------|------------|
+| 鐘型 (bell) | 圓錐形 (conical) | 凸型 (convex) | 平坦型 (flat) | 凹陷型 (sunken) | 球型 (spherical) | 其他 (other) |
+
+
+
+```{r message=FALSE, warning=FALSE}
+# cap.shape
+mushroom_data2 = mushroom_data %>% 
+    group_by(cap.shape, class) %>% 
+    summarise(count = n())
+
+p1 = ggplot(mushroom_data2,
+            aes(x = reorder(cap.shape,-count),
+                y = count, fill = class)) +
+    geom_bar(stat = "identity", position = "dodge",alpha = 0.7) +
+    labs(x = "cap.shape")
+
+p1.2 = ggplot(mushroom_data2, 
+            aes(x = reorder(cap.shape,-count), y = count, 
+                fill=class)) + 
+    geom_bar(stat = "identity",position = "fill", alpha = 0.7) + 
+    geom_abline(slope = 0, intercept = prob_, linetype = "dashed")+
+    labs(x = "cap.shape", y="proportion")
+
+ggarrange(p1,p1.2,ncol=2,nrow=1,
+          common.legend = T, legend = "bottom")
+```
+
+
++ *cap.surface* : 蘑菇傘表面 (11 levels)  
+
+| i             | g            | y          | s           | h          | l             | k          | t           | w            | e           | d |
+|---------------|--------------|------------|-------------|------------|---------------|------------|-------------|--------------|-------------|---|
+| 纖維狀 (fibrous) | 凹槽 (grooves) | 鱗狀 (scaly) | 光滑 (smooth) | 閃亮 (shiny) | 革質 (leathery) | 絲質 (silky) | 黏性 (sticky) | 皺 (wrinkled) | 豐滿 (fleshy) |   |
+
+
+
+
+```{r message=FALSE, warning=FALSE}
+# cap.surface
+mushroom_data2 = mushroom_data %>% 
+    group_by(cap.surface, class) %>% 
+    summarise(count = n()) %>% 
+    na.omit()
+
+p2 = ggplot(mushroom_data2, 
+            aes(x = reorder(cap.surface,-count), 
+                y = count, fill = class)) + 
+    geom_bar(stat = "identity", position = "dodge",alpha = 0.7) + 
+    labs(x = "cap.surface")
+
+p2.2 = ggplot(mushroom_data2, 
+            aes(x = reorder(cap.surface,-count), y = count, 
+                fill=class)) + 
+    geom_bar(stat = "identity",position = "fill", alpha = 0.7) + 
+    geom_abline(slope = 0, intercept = prob_, linetype = "dashed")+
+    labs(x = "cap.surface", y="proportion")
+
+ggarrange(p2,p2.2,ncol=2,nrow=1,
+          common.legend = T, legend = "bottom")
+```
+
+
++ *cap.color* : 蘑菇傘顏色 (12 levels)  
+
+| n          | b          | g         | r          | p          | u           | e        | w          | y           | l         | o           | k          |
+|------------|------------|-----------|------------|------------|-------------|----------|------------|-------------|-----------|-------------|------------|
+| 棕色 (brown) | 淺黃色 (buff) | 灰色 (gray) | 綠色 (green) | 粉紅色 (pink) | 紫色 (purple) | 紅色 (red) | 白色 (white) | 黃色 (yellow) | 藍色 (blue) | 橘色 (orange) | 黑色 (black) |
+
+
+
+```{r message=FALSE, warning=FALSE}
+# cap.color
+mushroom_data2 = mushroom_data %>% 
+    group_by(cap.color, class) %>% 
+    summarise(count = n())
+
+p3 = ggplot(mushroom_data2, 
+            aes(x = reorder(cap.color,-count), 
+                y = count, fill = class)) + 
+    geom_bar(stat = "identity", position = "dodge",alpha = 0.7) + 
+    labs(x = "cap.color")
+
+p3.2 = ggplot(mushroom_data2, 
+            aes(x = reorder(cap.color,-count), y = count, 
+                fill=class)) + 
+    geom_bar(stat = "identity",position = "fill", alpha = 0.7) + 
+    geom_abline(slope = 0, intercept = prob_, linetype = "dashed")+
+    labs(x = "cap.color", y="proportion")
+
+ggarrange(p3,p3.2,ncol=2,nrow=1,
+          common.legend = T, legend = "bottom")
+```
+
+
++ *does.bruise.or.bleed* : 是否有瘀傷或流血 (2 levels)  
+
+
+
+```{r message=FALSE, warning=FALSE}
+# does.bruise.or.bleed
+mushroom_data2 = mushroom_data %>% 
+    group_by(does.bruise.or.bleed, class) %>% 
+    summarise(count = n())
+
+p4 = ggplot(mushroom_data2, 
+            aes(x = reorder(does.bruise.or.bleed,-count), 
+                y = count, fill = class)) + 
+    geom_bar(stat = "identity", position = "dodge",alpha = 0.7) + 
+    labs(x = "does.bruise.or.bleed")
+
+p4.2 = ggplot(mushroom_data2, 
+            aes(x = reorder(does.bruise.or.bleed,-count), y = count, 
+                fill=class)) + 
+    geom_bar(stat = "identity",position = "fill", alpha = 0.7) + 
+    geom_abline(slope = 0, intercept = prob_, linetype = "dashed")+
+    labs(x = "does.bruise.or.bleed", y="proportion")
+
+ggarrange(p4,p4.2,ncol=2,nrow=1,
+          common.legend = T, legend = "bottom")
+```
+
+
+#### 蘑菇菌褶(gill)特徵：
+
++ *gill.attachment* : 菌褶附著物 (7 levels)  
+
+| a      | x       | d         | e    | s       | p     | f    |
+|--------|---------|-----------|------|---------|-------|------|
+| adnate | adnexed | decurrent | free | sinuate | pores | none |
+
+
+See here : https://zh.m.wikipedia.org/zh-tw/%E8%8F%8C%E8%A4%B6
+
+
+
+```{r message=FALSE, warning=FALSE}
+# gill.attachment
+mushroom_data2 = mushroom_data %>% 
+    group_by(gill.attachment, class) %>% 
+    summarise(count = n()) %>% 
+    na.omit()
+
+p1 = ggplot(mushroom_data2, 
+            aes(x = reorder(gill.attachment,-count), 
+                y = count, fill = class)) + 
+    geom_bar(stat = "identity", position = "dodge",alpha = 0.7) + 
+    labs(x = "gill.attachment")
+
+p1.2 = ggplot(mushroom_data2, 
+            aes(x = reorder(gill.attachment,-count), y = count, 
+                fill=class)) + 
+    geom_bar(stat = "identity",position = "fill", alpha = 0.7) + 
+    geom_abline(slope = 0, intercept = prob_, linetype = "dashed")+
+    labs(x = "gill.attachment", y="proportion")
+
+ggarrange(p1,p1.2,ncol=2,nrow=1,
+          common.legend = T, legend = "bottom")
+```
+
++ *gill.color* : 菌褶顏色 (12 levels)  
+
+| n          | b          | g         | r          | p          | u           | e        | w          | y           | l         | o           | k          |
+|------------|------------|-----------|------------|------------|-------------|----------|------------|-------------|-----------|-------------|------------|
+| 棕色 (brown) | 淺黃色 (buff) | 灰色 (gray) | 綠色 (green) | 粉紅色 (pink) | 紫色 (purple) | 紅色 (red) | 白色 (white) | 黃色 (yellow) | 藍色 (blue) | 橘色 (orange) | 黑色 (black) |
+
+
+```{r message=FALSE, warning=FALSE}
+# gill.color
+mushroom_data2 = mushroom_data %>% 
+    group_by(gill.color, class) %>% 
+    summarise(count = n()) %>% 
+    na.omit()
+
+p2 = ggplot(mushroom_data2, 
+            aes(x = reorder(gill.color,-count), 
+                y = count, fill = class)) + 
+    geom_bar(stat = "identity", position = "dodge",alpha = 0.7) + 
+    labs(x = "gill.color")
+
+p2.2 = ggplot(mushroom_data2, 
+            aes(x = reorder(gill.color,-count), y = count, 
+                fill=class)) + 
+    geom_bar(stat = "identity",position = "fill", alpha = 0.7) + 
+    geom_abline(slope = 0, intercept = prob_, linetype = "dashed")+
+    labs(x = "gill.color", y="proportion")
+
+ggarrange(p2,p2.2,ncol=2,nrow=1,
+          common.legend = T, legend = "bottom")
+```
+
+
+#### 蘑菇莖幹(stem)特徵：
+
++ *stem.color* : 蘑菇莖顏色 (13 levels)  
+
+| n          | b          | g         | r          | p          | u           | e        | w          | y           | l         | o           | k          |
+|------------|------------|-----------|------------|------------|-------------|----------|------------|-------------|-----------|-------------|------------|
+| 棕色 (brown) | 淺黃色 (buff) | 灰色 (gray) | 綠色 (green) | 粉紅色 (pink) | 紫色 (purple) | 紅色 (red) | 白色 (white) | 黃色 (yellow) | 藍色 (blue) | 橘色 (orange) | 黑色 (black) |
+
+```{r message=FALSE, warning=FALSE}
+mushroom_data2 = mushroom_data %>% 
+    group_by(stem.color, class) %>% 
+    summarise(count = n()) %>% 
+    na.omit()
+
+p1 = ggplot(mushroom_data2, 
+            aes(x = reorder(stem.color,-count), 
+                y = count, fill = class)) + 
+    geom_bar(stat = "identity", position = "dodge",alpha = 0.7) + 
+    labs(x = "stem.color")
+
+p1.2 = ggplot(mushroom_data2, 
+            aes(x = reorder(stem.color,-count), y = count, 
+                fill=class)) + 
+    geom_bar(stat = "identity",position = "fill", alpha = 0.7) + 
+    geom_abline(slope = 0, intercept = prob_, linetype = "dashed")+
+    labs(x = "stem.color", y="proportion")
+
+ggarrange(p1,p1.2,ncol=2,nrow=1,
+          common.legend = T, legend = "bottom")
+```
+
+
+
+
+
+
+#### 蘑菇環(ring)特徵：
+
++ *has.ring* : 蘑菇是否有環 (2 levels)  
+
+
+
+```{r message=FALSE, warning=FALSE}
+# has.ring
+mushroom_data2 = mushroom_data %>% 
+    group_by(has.ring, class) %>% 
+    summarise(count = n())
+
+p1 = ggplot(mushroom_data2, 
+            aes(x = reorder(has.ring,-count), 
+                y = count, fill = class)) + 
+    geom_bar(stat = "identity", position = "dodge",alpha = 0.7) + 
+    labs(x = "has.ring")
+
+p1.2 = ggplot(mushroom_data2, 
+            aes(x = reorder(has.ring,-count), y = count, 
+                fill=class)) + 
+    geom_bar(stat = "identity",position = "fill", alpha = 0.7) + 
+    geom_abline(slope = 0, intercept = prob_, linetype = "dashed")+
+    labs(x = "has.ring", y="proportion")
+
+ggarrange(p1,p1.2,ncol=2,nrow=1,
+          common.legend = T, legend = "bottom")
+```
+
++ *ring.type* : 蘑菇環的種類 (8 levels)  
+
+| c             | e               | r            | g            | l         | p            | s               | z         | y          | m             | f        |
+|---------------|-----------------|--------------|--------------|-----------|--------------|-----------------|-----------|------------|---------------|----------|
+| 蛛網 (cobwebby) | 消逝 (evanescent) | 擴口 (flaring) | 凹槽 (grooved) | 大 (large) | 吊墜 (pendant) | 覆蓋物 (sheathing) | 環帶 (zone) | 鱗狀 (scaly) | 可移動 (movable) | 無 (none) |
+
+
+
+```{r message=FALSE, warning=FALSE}
+# ring.type
+mushroom_data2 = mushroom_data %>% 
+    group_by(ring.type, class) %>% 
+    summarise(count = n()) %>% 
+    na.omit()
+
+p2 = ggplot(mushroom_data2, 
+            aes(x = reorder(ring.type,-count), 
+                y = count, fill = class)) + 
+    geom_bar(stat = "identity", position = "dodge",alpha = 0.7) + 
+    labs(x = "ring.type")
+
+p2.2 = ggplot(mushroom_data2, 
+            aes(x = reorder(ring.type,-count), y = count, 
+                fill=class)) + 
+    geom_bar(stat = "identity",position = "fill", alpha = 0.7) + 
+    geom_abline(slope = 0, intercept = prob_, linetype = "dashed")+
+    labs(x = "ring.type", y="proportion")
+
+ggarrange(p2,p2.2,ncol=2,nrow=1,
+          common.legend = T, legend = "bottom")
+```
+
+
+#### 蘑菇生長特徵：
+
++ *habitat* : 蘑菇生長環境 (8 levels)  
+
+| g           | l           | m            | p          | h           | u          | w          | d          |
+|-------------|-------------|--------------|------------|-------------|------------|------------|------------|
+| 草 (grasses) | 樹葉 (leaves) | 草地 (meadows) | 道路 (paths) | 荒地 (heaths) | 城市 (urban) | 垃圾 (waste) | 樹林 (woods) |
+
+
+
+
+```{r message=FALSE, warning=FALSE}
+# habitat
+mushroom_data2 = mushroom_data %>% 
+    group_by(habitat, class) %>% 
+    summarise(count = n())
+
+p1 = ggplot(mushroom_data2, 
+            aes(x = reorder(habitat,-count), 
+                y = count, fill = class)) + 
+    geom_bar(stat = "identity", position = "dodge",alpha = 0.7) + 
+    labs(x = "habitat")
+
+p1.2 = ggplot(mushroom_data2, 
+            aes(x = reorder(habitat,-count), y = count, 
+                fill=class)) + 
+    geom_bar(stat = "identity",position = "fill", alpha = 0.7) + 
+    geom_abline(slope = 0, intercept = prob_, linetype = "dashed")+
+    labs(x = "habitat", y="proportion")
+
+ggarrange(p1,p1.2,ncol=2,nrow=1,
+          common.legend = T, legend = "bottom")
+```
+
++ *season* : 蘑菇生長季節 (4 levels)  
+
+| s           | u           | a           | w           |
+|-------------|-------------|-------------|-------------|
+| 春天 (spring) | 夏天 (summer) | 秋天 (autumn) | 冬天 (winter) |
+
+
+
+```{r message=FALSE, warning=FALSE}
+# season
+mushroom_data2 = mushroom_data %>% 
+    group_by(season, class) %>% 
+    summarise(count = n()) %>% 
+    na.omit()
+
+p2 = ggplot(mushroom_data2, 
+            aes(x = reorder(season,-count), 
+                y = count, fill = class)) + 
+    geom_bar(stat = "identity", position = "dodge",alpha = 0.7) + 
+    labs(x = "season")
+
+p2.2 = ggplot(mushroom_data2, 
+            aes(x = reorder(season,-count), y = count, 
+                fill=class)) + 
+    geom_bar(stat = "identity",position = "fill", alpha = 0.7) + 
+    geom_abline(slope = 0, intercept = prob_, linetype = "dashed")+
+    labs(x = "season", y="proportion")
+
+ggarrange(p2,p2.2,ncol=2,nrow=1,
+          common.legend = T, legend = "bottom")
+```
+
+
+
+
+
+
+# Split train-test sets
+
+
+
+
+## Missing value Imputation
+
+對變數 *cap.surface* 和 *gill.attachment* 利用 multinomial logistic regression 進行補值
+
+```{r}
+library(nnet)
+```
+
+```{r}
+set.seed(1221)
+idx_train = sample(1:58598,46878)
+mushroom_data_train = mushroom_data[idx_train,]
+mushroom_data_test = mushroom_data[-idx_train,]
+```
+
+
+```{r include=FALSE}
+model_cap.surface = multinom(cap.surface ~ ., 
+                             data = mushroom_data_train[,-c(1,7)])
+```
+
+
+```{r include=FALSE}
+idx_cap.surface_na = is.na(mushroom_data$cap.surface)
+pred_cap.surface = predict(model_cap.surface, 
+                           newdata = mushroom_data[idx_cap.surface_na,-c(1,7)], 
+                           type = "class")
+```
+
+
+```{r}
+mushroom_data = mushroom_data %>% 
+    mutate(cap.surface_impute = cap.surface)
+
+mushroom_data$cap.surface_impute[idx_cap.surface_na] = pred_cap.surface
+```
+
+
+
+
+
+
+
+
+
+
+```{r include=FALSE}
+model_gill.attachment = multinom(gill.attachment ~., 
+                                 data = mushroom_data_train[,-c(1,4,16)])
+```
+
+```{r}
+idx_gill.attachment_na = is.na(mushroom_data$gill.attachment)
+pred_gill.attachment = predict(model_gill.attachment, 
+                               newdata = mushroom_data[idx_gill.attachment_na,-c(1,4,16)], 
+                               type = "class")
+```
+
+
+```{r}
+mushroom_data = mushroom_data %>% 
+    mutate(gill.attachment_impute = gill.attachment)
+mushroom_data$gill.attachment_impute[idx_gill.attachment_na] = pred_gill.attachment
+```
+
+
+
+
+
+```{r}
+mushroom_data_train = mushroom_data[idx_train,]
+mushroom_data_test = mushroom_data[-idx_train,]
+```
+
+
+
+
+```{r}
+write.csv(mushroom_data_train,"mushroom_train.csv", row.names = F)
+write.csv(mushroom_data_test,"mushroom_test.csv", row.names = F)
+```
+
+
+觀察補值前後此兩變數的分布：
+
+```{r message=FALSE, warning=FALSE}
+# cap.surface
+mushroom_data2 = mushroom_data %>% 
+    group_by(cap.surface, class) %>% 
+    summarise(count = n()) %>% 
+    na.omit() %>% 
+    ungroup()
+
+p2 = ggplot(na.omit(mushroom_data2), 
+            aes(x = reorder(cap.surface,-count), 
+                y = count, fill = class)) + 
+    geom_bar(stat = "identity", position = "dodge",alpha = 0.7) + 
+    labs(x = "cap.surface")
+
+p2.2 = ggplot(na.omit(mushroom_data2), 
+            aes(x = reorder(cap.surface,-count), y = count, 
+                fill=class)) + 
+    geom_bar(stat = "identity",position = "fill", alpha = 0.7) + 
+    geom_abline(slope = 0, intercept = prob_, linetype = "dashed")+
+    labs(x = "cap.surface", y="proportion")
+
+
+mushroom_data3 = mushroom_data %>% 
+    group_by(cap.surface_impute, class) %>% 
+    summarise(count = n()) %>% 
+    ungroup() %>% 
+    mutate(count2 = mushroom_data2$count)
+
+p3 = ggplot(mushroom_data3, 
+            aes(x = reorder(cap.surface_impute,-count2), 
+                y = count, fill = class)) + 
+    geom_bar(stat = "identity", position = "dodge",alpha = 0.7) + 
+    labs(x = "cap.surface_impute")
+
+p3.2 = ggplot(mushroom_data3, 
+            aes(x = reorder(cap.surface_impute,-count2), y = count, 
+                fill=class)) + 
+    geom_bar(stat = "identity",position = "fill", alpha = 0.7) + 
+    geom_abline(slope = 0, intercept = prob_, linetype = "dashed")+
+    labs(x = "cap.surface_impute", y="proportion")
+
+ggarrange(p2,p2.2,p3,p3.2,ncol=2,nrow=2,
+          common.legend = T, legend = "bottom")
+```
+
+
+```{r message=FALSE, warning=FALSE}
+# gill.attachment
+mushroom_data2 = mushroom_data %>% 
+    group_by(gill.attachment, class) %>% 
+    summarise(count = n()) %>% 
+    na.omit() %>% 
+    ungroup()
+
+p1 = ggplot(mushroom_data2, 
+            aes(x = reorder(gill.attachment,-count), 
+                y = count, fill = class)) + 
+    geom_bar(stat = "identity", position = "dodge",alpha = 0.7) + 
+    labs(x = "gill.attachment")
+
+p1.2 = ggplot(mushroom_data2, 
+            aes(x = reorder(gill.attachment,-count), y = count, 
+                fill=class)) + 
+    geom_bar(stat = "identity",position = "fill", alpha = 0.7) + 
+    geom_abline(slope = 0, intercept = prob_, linetype = "dashed")+
+    labs(x = "gill.attachment", y="proportion")
+
+
+mushroom_data3 = mushroom_data %>% 
+    group_by(gill.attachment_impute, class) %>% 
+    summarise(count = n()) %>% 
+    ungroup() %>% 
+    mutate(count2 = mushroom_data2$count)
+
+
+p3 = ggplot(mushroom_data3, 
+            aes(x = reorder(gill.attachment_impute,-count2), 
+                y = count, fill = class)) + 
+    geom_bar(stat = "identity", position = "dodge",alpha = 0.7) + 
+    labs(x = "gill.attachment_impute")
+
+p3.2 = ggplot(mushroom_data3, 
+            aes(x = reorder(gill.attachment_impute,-count2), y = count, 
+                fill=class)) + 
+    geom_bar(stat = "identity",position = "fill", alpha = 0.7) + 
+    geom_abline(slope = 0, intercept = prob_, linetype = "dashed")+
+    labs(x = "gill.attachment_impute", y="proportion")
+
+ggarrange(p1,p1.2,p3,p3.2,ncol=2,nrow=2,
+          common.legend = T, legend = "bottom")
+```
+
+
+
+```{r}
+library(caret)
+library(ROSE)
+library(MASS)
+library(e1071)
+library(dplyr)
+```
+
+# 資料前處理
+
+```{r}
+dat6w_train = read.csv("mushroom_train.csv")[,-c(4,7,12)]
+dat6w_test = read.csv("mushroom_test.csv")[,-c(4,7,12)]
+
+dat6w_train$class = factor(dat6w_train$class)
+dat6w_train$cap.shape = factor(dat6w_train$cap.shape)
+dat6w_train$cap.surface_impute = factor(dat6w_train$cap.surface_impute)
+dat6w_train$cap.color = factor(dat6w_train$cap.color)
+dat6w_train$does.bruise.or.bleed = factor(dat6w_train$does.bruise.or.bleed)
+dat6w_train$gill.attachment_impute = factor(dat6w_train$gill.attachment_impute)
+dat6w_train$gill.color = factor(dat6w_train$gill.color)
+dat6w_train$stem.color = factor(dat6w_train$stem.color)
+dat6w_train$ring.type = factor(dat6w_train$ring.type)
+dat6w_train$habitat = factor(dat6w_train$habitat)
+dat6w_train$season = factor(dat6w_train$season)
+
+dat6w_test$class = factor(dat6w_test$class)
+dat6w_test$cap.shape = factor(dat6w_test$cap.shape)
+dat6w_test$cap.surface_impute = factor(dat6w_test$cap.surface_impute)
+dat6w_test$cap.color = factor(dat6w_test$cap.color)
+dat6w_test$does.bruise.or.bleed = factor(dat6w_test$does.bruise.or.bleed)
+dat6w_test$gill.attachment_impute = factor(dat6w_test$gill.attachment_impute)
+dat6w_test$gill.color = factor(dat6w_test$gill.color)
+dat6w_test$stem.color = factor(dat6w_test$stem.color)
+dat6w_test$ring.type = factor(dat6w_test$ring.type)
+dat6w_test$habitat = factor(dat6w_test$habitat)
+dat6w_test$season = factor(dat6w_test$season)
+```
+
+# Logistic
+
+```{r}
+fit_lr_full = glm(class~., dat6w_train, family=binomial)
+summary(fit_lr_full)
+glm.probs = predict(fit_lr_full, dat6w_test, type = "response")
+glm.class = rep("e", length(glm.probs))
+glm.class[glm.probs > 0.5] = "p"
+confusionMatrix(factor(glm.class), dat6w_test$class, positive = "p") # ACC=0.7752
+roc.curve(dat6w_test$class, glm.probs, plotit = T) # AUC=0.850
+```
+
+# LDA
+
+```{r}
+fit_lda = lda(class~., dat6w_train)
+lda.pred = predict(fit_lda, dat6w_test)
+lda.class = lda.pred$class
+confusionMatrix(factor(lda.class), dat6w_test$class, positive = "p") # ACC=0.7702
+roc.curve(dat6w_test$class, lda.pred$posterior[,2], plotit = T) # AUC=0.845
+```
+
+# NB
+
+```{r}
+fit_nb = naiveBayes(class~., dat6w_train)
+nb.class = predict(fit_nb, dat6w_test)
+confusionMatrix(factor(nb.class), dat6w_test$class, positive = "p") # ACC=0.6632
+nb.probs = predict(fit_nb, dat6w_test, type="raw")
+roc.curve(dat6w_test$class, nb.probs[,2], plotit = T) # AUC=0.765
+```
+
+# SVM
+
+```{r}
+fit_SVM = svm(class~., data=dat6w_train, kernel="radial", gamma=0.5, cost=10, probability=T)
+pred_SVM = predict(fit_SVM, dat6w_test, probability=T)
+prob_SVM = attr(pred_SVM,"probabilities")[,1]
+pred_SVM = as.numeric(pred_SVM)-1
+pred_SVM = ifelse(pred_SVM==1,"p","e")
+confusionMatrix(factor(pred_SVM), dat6w_test$class, positive = "p") # ACC=0.9992
+roc.curve(dat6w_test$class, prob_SVM, plotit = T) # AUC=1
+```
+
+# 毒鵝膏
+
+```{r}
+library(designr)
+pred.mush.na.l <- fixed.factor("cap.diameter", levels = seq(5,15,2)) + 
+  fixed.factor("cap.shape", levels =c("x","f")) + 
+  fixed.factor("cap.color", levels =c("r")) +
+  fixed.factor("does.bruise.or.bleed", levels =c("t","f")) +
+  fixed.factor("gill.color", levels =c("w")) +
+  fixed.factor("stem.height", levels =seq(8,15,2)) +
+  fixed.factor("stem.width", levels =seq(10,20,2)) +
+  fixed.factor("stem.color", levels =c("w")) +
+  fixed.factor("ring.type", levels =c("z")) +
+  fixed.factor("habitat", levels =c("d")) +
+  fixed.factor("season", levels =c("u","a")) +
+  fixed.factor("cap.surface_impute", levels =c("t")) +
+  fixed.factor("gill.attachment_impute", levels =c("e"))
+
+fac.fn<-function(data,idx){
+  for(i in idx){
+    data[,i]<-as.factor(data[,i])
+  }
+  data.frame(data)
+}
+
+pred.mush.na<-data.frame(as.matrix(output.design(pred.mush.na.l)$codes))
+pred.mush.na<-fac.fn(pred.mush.na,(1:13)[-c(1,6,7)])
+pred.mush.na[,1]<-as.numeric(pred.mush.na[,1])
+pred.mush.na[,6]<-as.numeric(pred.mush.na[,6])
+pred.mush.na[,7]<-as.numeric(pred.mush.na[,7])
+for(i in (1:13)[-c(1,6,7)]){
+  levels(pred.mush.na[,i])<-levels(dat6w_train[,i+1])
+}
+
+pred_SVM2 = predict(fit_SVM, pred.mush.na, probability=T)
+prob_SVM2 = attr(pred_SVM2,"probabilities")[,1]
+pred_SVM2 = as.numeric(pred_SVM2)-1
+pred_SVM2 = factor(ifelse(pred_SVM2==1,"p","e"))
+
+par(mfrow=c(1,1))
+plot(prob_SVM2,ylab="probability",main="SVM",pch=20,ylim=c(0,1))
+
+summary(pred_SVM2)
+```
+
+
+
+
+```{r include=FALSE}
+library(ISLR2)
+library(pdp)
+library(ggpubr)
+library(splines)
+library(readr)
+library(knitr)
+library(RColorBrewer)
+library(ggcorrplot) 
+# library(tidyverse)
+library(gridExtra)
+library(ggplot2)
+library(GGally)
+library(dplyr)
+library(designr)
+library(MASS)
+library(gam)
+library(randomForest) # bagging & randomforest
+library(rpart.plot)   # rpart,tree plot
+library(kableExtra)   # kable
+library(latex2exp)    # TeX
+library(corrplot)     # correlation plot
+library(xgboost)      # xgboost
+library(cowplot)      # plot pairwise
+library(rpart)        # rpart,tree
+library(caret)        # trainControl
+library(leaps)        # subsets
+library(ROSE)         # ROC curve
+library(tree)         # tree
+library(data.table)
+library(gbm)          # boosting
+```
+
+```{r include=FALSE}
+# Function
+
+fac.fn<-function(data,idx){
+  for(i in idx){
+    data[,i]<-as.factor(data[,i])
+  }
+  data.frame(data)
+}
+
+performance.fn <- function(pred.p, pred.c, true.c, method, plot=T){
+  con <- confusionMatrix(pred.c,true.c,positive = "e")
+  Sensitivity <- con$byClass[1] ; Specificity <- con$byClass[2]
+  AUC <- roc.curve(true.c, pred.p, main = method, plotit = plot)$auc
+  if(plot==T){ text(0.7,0.1,paste("AUC = ",round(AUC,4)),cex = 1.5) }
+  perform<-c(Sensitivity, Specificity, con$overall[1])
+  names(perform)<-c("Sensitivity", "Specificity", "ACC")
+  ref.ta<-con$table
+  print(round(perform, 3))
+  print(ref.ta)
+  list("perform"=perform,"ref.table"=ref.ta)
+}
+```
+
+```{r include=FALSE}
+# Read data
+mush.train.na <- read.csv("mushroom_train.csv")
+mush.test.na <- read.csv("mushroom_test.csv")
+
+mush.train.na<-mush.train.na[,-c(4,7)]
+mush.test.na<-mush.test.na[,-c(4,7)]
+
+mush.train.na<-fac.fn(mush.train.na,(1:15)[-c(2,7,8)])
+mush.test.na<-fac.fn(mush.test.na,(1:15)[-c(2,7,8)])
+
+```
+
+# Model
+
+## Decision tree (rpart)
+
+```{r}
+mush.tree1.na<- rpart(class~ ., data=mush.train.na, method = 'class')
+rpart.plot(mush.tree1.na, type = 3, fallen.leaves = T,cex=0.6)
+mush.tree1.prune.na <- prune(mush.tree1.na,
+                          cp=mush.tree1.na$cptable[which.min(mush.tree1.na$cptable[,"xerror"]),"CP"])
+# prp(mush.tree1.prune.na,fallen.leaves=TRUE, extra=1)
+```
+
+```{r}
+mush.tree1.na.pred.test.p <- predict(mush.tree1.na, newdata=mush.test.na, type="prob")[,2]
+mush.tree1.na.pred.test.c <- factor(ifelse(mush.tree1.na.pred.test.p>=0.5, 'p','e'))
+
+mush.tree1.na.perform<-performance.fn(mush.tree1.na.pred.test.p,
+                                      mush.tree1.na.pred.test.c, factor(mush.test.na$class),"Tree")
+```
+
+## Random forest
+
+```{r}
+mush.RF.na.al <- randomForest(class~., data=mush.train.na, ntree=300)
+plot(mush.RF.na.al)
+```
+
+```{r}
+set.seed(101)
+tuneRF(mush.train.na[,-1],mush.train.na[,1], ntreeTry = 50)
+```
+
+```{r}
+mush.RF.na <- randomForest(class~., data=mush.train.na,
+                        mtry=6, ntree=50, importance=T)
+```
+
+```{r}
+mush.RF.na.pred.test.p <- predict(mush.RF.na, mush.test.na, type='prob')[,2]
+mush.RF.na.pred.test.c <- factor(ifelse(mush.RF.na.pred.test.p>=0.5, 'p','e'))
+
+mush.RF.na.perform<-performance.fn(mush.RF.na.pred.test.p, 
+                                mush.RF.na.pred.test.c, 
+                                factor(mush.test.na$class),"Random Forest")
+```
+
+## Boosting
+
+```{r}
+# tune parameter
+fitControl <- trainControl(method = "repeatedcv", number = 5, repeats = 5)
+set.seed(101)
+mush.boosting.na.tune <- train(class ~ ., data = mush.train.na, method = "gbm", 
+                    trControl = fitControl, verbose = FALSE)
+mush.boosting.na.tune
+```
+
+The final parameters used for the model were n.trees = 150, interaction.depth = 3, shrinkage = 0.1 and n.minobsinnode = 10.  
+
+```{r}
+set.seed(101)
+mush.train.boost.na <- mush.train.na
+mush.test.boost.na <- mush.test.na
+mush.train.boost.na$class <- as.numeric(mush.train.boost.na$class == "p")
+mush.test.boost.na$class <- as.numeric(mush.test.boost.na$class == "p")
+
+mush.boost.na <- gbm(class ~ ., data = mush.train.boost.na, distribution = "bernoulli", 
+                  n.trees = 150, interaction.depth = 3, shrinkage = 0.1, n.minobsinnode = 10)
+mush.boost.na.sum<-data.frame(summary(mush.boost.na,plotit = F))
+mush.boost.na.rel.inf<-mush.boost.na.sum$rel.inf
+names(mush.boost.na.rel.inf)<-mush.boost.na.sum$var
+```
+
+```{r}
+mush.boost.na.pred.test.p <- predict(mush.boost.na, data.frame(mush.test.boost.na), type = "response")
+mush.boost.na.pred.test.c <- factor(ifelse(mush.boost.na.pred.test.p>=0.5, 'p','e'))
+
+mush.boost.na.perform<-performance.fn(mush.boost.na.pred.test.p, 
+                                   mush.boost.na.pred.test.c,
+                                   factor(mush.test.na$class),"Boosting")
+```
+
+
+# Model performance comparison
+
+```{r}
+table.na <-(rbind(mush.tree1.na.perform$perform,
+               mush.RF.na.perform$perform,
+               rep(NA,3),
+               mush.boost.na.perform$perform) %>% as.data.frame() %>%
+  `colnames<-` (c('Sensitivity','Specificity','Accuracy'))%>%
+  `rownames<-` (c('Decision tree','Random Forest','XGBoost','Boosting')))
+kable(table.na,digits = 7)
+```
+
+# Variable Importance
+
+## Relative variable Importance
+
+```{r}
+mush.tree.na.var.gg<-mush.tree1.prune.na$variable.importance %>%
+as.matrix() %>%
+as.data.frame() %>%
+add_rownames() %>%
+`colnames<-`(c("varname","Importance")) %>%
+arrange(desc(Importance)) %>%
+top_n(24,wt = Importance) %>%
+ggplot(aes(x = reorder(varname, Importance),y = Importance)) +
+geom_col(fill = 'orange', color = 'black') +
+coord_flip() +
+ggtitle(label = "Decision tree") +
+xlab('Variable') +
+ylab('Importance') +
+theme(plot.title=element_text(hjust=0.5,size=15),
+axis.title=element_text(size=15))
+```
+
+```{r}
+mush.RF.na.var.gg<-mush.RF.na$importance %>% 
+  as.matrix() %>% 
+  as.data.frame() %>% 
+  add_rownames() %>% 
+  `colnames<-`(c("varname",'No','Yes',"MeanDecreaseAccuracy",'MeanDecreaseGini')) %>%
+  arrange(desc(MeanDecreaseAccuracy)) %>% 
+  top_n(24,wt = MeanDecreaseAccuracy) %>% 
+  ggplot(aes(x = reorder(varname, MeanDecreaseAccuracy),y = MeanDecreaseAccuracy)) +
+  geom_col(fill = 'steelblue', color = 'black') +
+  coord_flip() +
+  ggtitle(label = "Random Forest") +
+  xlab('Variable') +
+  ylab('MeanDecreaseAccuracy') +
+  theme(plot.title=element_text(hjust=0.5,size=15),
+        axis.title=element_text(size=15))
+```
+
+```{r}
+mush.boost.na.var.gg<-mush.boost.na.rel.inf %>% 
+  as.matrix() %>% 
+  as.data.frame() %>% 
+  add_rownames() %>% 
+  `colnames<-`(c("varname","Rel.Inf")) %>%
+  arrange(desc(Rel.Inf)) %>% 
+  top_n(24,wt = Rel.Inf) %>% 
+  ggplot(aes(x = reorder(varname, Rel.Inf),y = Rel.Inf)) +
+  geom_col(fill = 'green4', color = 'black') +
+  coord_flip() +
+  ggtitle(label = "Boosting") +
+  xlab('Variable') +
+  ylab('Relative Influence') +
+  theme(plot.title=element_text(hjust=0.5,size=15),
+        axis.title=element_text(size=15))
+```
+
+```{r fig.height=4, fig.width=10}
+ggarrange(mush.tree.na.var.gg,mush.RF.na.var.gg,mush.boost.na.var.gg,ncol=3,nrow=1)
+```
+
+
+## Partial dependence plot
+
+### Random Forest
+
+```{r}
+par(mfrow=c(2,3))
+partialPlot(mush.RF.na,pred.data = mush.train.na,x.var="stem.color", which.class="p")
+partialPlot(mush.RF.na,pred.data = mush.train.na,x.var="gill.attachment_impute", which.class="p")
+partialPlot(mush.RF.na,pred.data = mush.train.na,x.var="stem.width", which.class="p")
+partialPlot(mush.RF.na,pred.data = mush.train.na,x.var="cap.surface_impute", which.class="p")
+partialPlot(mush.RF.na,pred.data = mush.train.na,x.var="gill.color", which.class="p")
+```
+
+
+### Boosting
+
+```{r}
+
+plot(mush.boost.na, i = "stem.color",cex=1.5)
+plot(mush.boost.na, i = "gill.attachment_impute",cex=1.5)
+plot(mush.boost.na, i = "cap.surface_impute",cex=1.5)
+plot(mush.boost.na, i = "stem.height",cex=1.5)
+plot(mush.boost.na, i = "cap.color",cex=1.5)
+
+```
+
+# Prediction for 鵝毒膏
+
+```{r}
+pred.mush.na.l <- fixed.factor("cap.diameter", levels = seq(5,15,2)) + 
+  fixed.factor("cap.shape", levels =c("x","f")) + 
+  fixed.factor("cap.color", levels =c("r")) +
+  fixed.factor("does.bruise.or.bleed", levels =c("t","f")) +
+  fixed.factor("gill.color", levels =c("w")) +
+  fixed.factor("stem.height", levels =seq(8,15,2)) +
+  fixed.factor("stem.width", levels =seq(10,20,2)) +
+  fixed.factor("stem.color", levels =c("w")) +
+  fixed.factor("has.ring", levels =c("t")) +
+  fixed.factor("ring.type", levels =c("z")) +
+  fixed.factor("habitat", levels =c("d")) +
+  fixed.factor("season", levels =c("u","a")) +
+  fixed.factor("cap.surface_impute", levels =c("t")) +
+  fixed.factor("gill.attachment_impute", levels =c("e")) # 2*2*2*6*6*4
+
+pred.mush.na<-data.frame(as.matrix(output.design(pred.mush.na.l)$codes))
+pred.mush.na<-fac.fn(pred.mush.na,(1:14)[-c(1,6,7)])
+pred.mush.na[,1]<-as.numeric(pred.mush.na[,1])
+pred.mush.na[,6]<-as.numeric(pred.mush.na[,6])
+pred.mush.na[,7]<-as.numeric(pred.mush.na[,7])
+for(i in (1:14)[-c(1,6,7)]){
+  levels(pred.mush.na[,i])<-levels(mush.train.na[,i+1])
+}
+
+pred.mush.tree.na.p <- predict(mush.tree1.na, pred.mush.na, type="prob")[,2]
+pred.mush.tree.na.c <- factor(ifelse(pred.mush.tree.na.p>=0.5, 'p','e'))
+
+pred.mush.RF.na.p <- predict(mush.RF.na, pred.mush.na, type='prob')[,2]
+pred.mush.RF.na.c <- factor(ifelse(pred.mush.RF.na.p>=0.5, 'p','e'))
+
+pred.mush.boost.na.p <- predict(mush.boost.na, pred.mush.na, type = "response")
+pred.mush.boost.na.c <- factor(ifelse(pred.mush.boost.na.p>=0.5, 'p','e'))
+
+par(mfrow=c(1,3))
+plot(pred.mush.tree.na.p,ylab="probability",main="Tree",pch=20,ylim=c(0,1))
+plot(pred.mush.RF.na.p,ylab="probability",pch=20,main="Random Forest",ylim=c(0,1))
+plot(pred.mush.boost.na.p,ylab="probability",pch=20,main="Boosting",ylim=c(0,1))
+
+```
+
