@@ -1,0 +1,294 @@
+---
+title: "Linear Model Assignment 7"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+    number_sections: true
+author: "110024516 統研碩一 邱繼賢"
+---
+
+**Problem 1.**  
+**a.**  
+匯入資料並建構模型：
+$$g_{1.1}\ :\ pasture\ \sim\ arable\ +\ cows\ +\ diff$$
+對 response *pasture* 做 Box-Cox transformation 然後繪製其 log-likelihood 圖形：
+
+```{r message=FALSE, warning=FALSE}
+library(MASS)
+rent_data = read.table("pasture.txt", skip = 1)
+colnames(rent_data) = c("arable", "cows", "diff", "pasture")
+g1.1 = lm(pasture ~ arable+cows+diff, data = rent_data)
+par(mfrow = c(1,2))
+boxcox(g1.1, plotit = T)
+boxcox(g1.1, plotit = T, lambda = seq(0,1,by = 0.1)) # take lambda = 0.5
+```
+
+可發現 $\lambda$ 的 95% 信賴區間並沒有包含 1 $\Rightarrow$ 有充分理由對 response *pasture* 做變換，且$0.4<\hat{\lambda}_{MLE}<0.5$，但因為此模型主要目的為 explanation 不是 prediction，所以取$\lambda=0.5$，即為將*pasture*變換為$\sqrt{pasture}$  
+重新建構模型：
+$$g_{1.2}\ :\ \sqrt{pasture}\ \sim\ arable\ +\ cows\ +\ diff$$
+
+```{r message=FALSE, warning=FALSE}
+g1.2 = lm(sqrt(pasture) ~ arable+diff+cows, data = rent_data)
+summary(g1.2)
+```
+
+並且檢查 diagnostics：
+
+```{r message=FALSE, warning=FALSE}
+par(mfrow = c(2,2))
+plot(g1.2)
+```
+
+**b.**  
+對 predictor *cows* 取一個夠高的次數，在此設定為五次，並建構模型
+$$\sqrt{pasture}\ \sim\ arable+diff+cows+cows^2+cows^3+cows^4+cows^5$$
+檢定 *cows* 最高次數的變數是否顯著，若不顯著則將其從模型中移除，重複此步驟直到最高次數的變數顯著為止：
+
+```{r}
+summary(lm(sqrt(pasture) ~ arable+diff+cows+
+               I(cows^2)+I(cows^3)+I(cows^4)+I(cows^5), 
+           data = rent_data))
+summary(lm(sqrt(pasture) ~ arable+diff+cows+
+               I(cows^2)+I(cows^3)+I(cows^4), 
+           data = rent_data))
+summary(lm(sqrt(pasture) ~ arable+diff+cows+
+               I(cows^2)+I(cows^3), 
+           data = rent_data))
+summary(lm(sqrt(pasture) ~ arable+diff+cows+
+               I(cows^2), 
+           data = rent_data))
+```
+
+當變數 *cows* 最高次數為二次時，才呈現為顯著，故建構模型：
+$$g_{1.3}\ :\ \sqrt{pasture}\ \sim\ arable+diff+cows+cows^2$$
+
+
+```{r}
+g1.3 = update(g1.2, .~. +I(cows^2), data = rent_data)
+summary(g1.3)
+```
+
+並檢查 diagnostics：
+
+```{r}
+par(mfrow = c(2,2))
+plot(g1.3)
+```
+
+**c.**  
+建構模型：
+$$g_{1.4}\ :\ \sqrt{pasture}\ \sim\ arable+diff+cows+(cows-25)\ d_{25}(cows)$$
+where
+$$
+d_{25}(cows)\ =\ 
+\left\{
+\begin{aligned}
+1\ ,\ \text{if}\ cows>25\\
+0\ ,\ \text{if}\ cows\leq25
+\end{aligned}
+\right.
+$$
+然後檢查此模型的 diagnostics：
+
+```{r}
+d = function(x) ifelse(x>25, 1, 0)
+g1.4 = update(g1.2, .~. +I((cows-25)*d(cows)), data = rent_data)
+par(mfrow = c(2,2))
+plot(g1.4)
+```
+
+比較模型 $g_{1.4}$ 是否 fit 的較模型 $g_{1.2}$ 來得好，即為進行以下檢定：
+$$
+\left\{
+\begin{aligned}
+&H_0\ :\ g_{1.2}\ \text{fits good enough}\\
+&H_1\ :\ g_{1.4}\ \text{fits significent better}
+\end{aligned}
+\right.
+$$
+
+```{r}
+anova(g1.2,g1.4)
+```
+
+pvalue = 0.005231 < 0.05 $\Rightarrow$ reject $H_0$  
+$\therefore$ The broken-stick regression improves the fit.
+
+
+**Problem 2.**  
+匯入資料並且將 1981 和 1982 兩年的 farmland value 以 Index 為 x 軸繪製折線圖：
+
+```{r message=FALSE, warning=FALSE}
+assess_data = read.table("assess.txt", header = T)
+matplot(cbind(assess_data$y1981, assess_data$y1982), 
+        type = "b", pch = 1, lty = 1, col = c("black", "red"), 
+        xlab = "Index", ylab = "farmland value")
+legend("topright", c("y1981","y1982"), lty = c(1,1), pch = c(1,1), col = c("black", "red"))
+```
+
+以同一組 Index 的兩年 farmland values 的算術平均數 $y = \frac{y1981+y1982}{2}$ 為 response ，各組的 $\frac{1}{sample\ variance}$ 為權重，建構模型：
+$$g_{2.1}\ :\ y\ \sim\ P\ +\ County\ +\ P:County$$
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+assess_data = assess_data %>% 
+    mutate(y=(y1981+y1982)/2, var=(y1981-y)^2+(y1982-y)^2)
+g2.1 = lm(y ~ P*County, weights = 1/var, data = assess_data)
+summary(g2.1)
+```
+
+可發現各交互作用項的係數皆不顯著，將模型 $g_{2.1}$ 與模型 $g_{2.2}\ :\ y\ \sim\ P\ +\ County$ 做比較
+$$
+\left\{
+\begin{aligned}
+&H_0\ :\ g_{2.2}\ \text{fits good enough}\\
+&H_1\ :\ g_{2.1}\ \text{fits significent better}
+\end{aligned}
+\right.
+$$
+
+```{r}
+g2.2 = lm(y ~ P + County, weights = 1/var, data = assess_data)
+anova(g2.2, g2.1)
+```
+
+$\because$ pvalue = 0.5999 > 0.05 $\Rightarrow$ fail to reject $H_0$  
+$\therefore$ 模型可以簡化為 $g_{2.2}$
+
+但此題是要探討土壤生產力 *P* 是否會對土地價值 *y* 有所影響，故繼續檢定模型 $g_{2.2}$ 是否可以簡化為模型 $g_{2.3}\ :\ y\ \sim\ P$
+$$
+\left\{
+\begin{aligned}
+&H_0\ :\ g_{2.3}\ \text{fits good enough}\\
+&H_1\ :\ g_{2.2}\ \text{fits significent better}
+\end{aligned}
+\right.
+$$
+
+```{r}
+g2.3 = lm(y ~ P, weights = 1/var, data = assess_data)
+anova(g2.3,g2.2)
+```
+
+$\because$ pvalue = 0.08398 > 0.05 $\Rightarrow$ fail to reject $H_0$  
+$\therefore$ 模型可以簡化為 $g_{2.3}$
+
+```{r}
+summary(g2.3)
+```
+
+土地價值評估模型：
+$$\hat{y}\ =\ 715.8032\ +\ 10.7555\times P$$
+
+
+\newpage
+**Problem 3.**  
+匯入資料並去除變數 *brozek, density, free*，然後以 *siri* 為 response，其餘 14 個變數為 predictors 建構模型：
+$$g_{3.1}\ :\ siri\ \sim\ .$$
+檢查此模型的 diagnostics：
+
+```{r message=FALSE, warning=FALSE}
+library(tibble)
+library(dplyr)
+fat_data = read.table("fat.txt")
+fat_data = as.tibble(fat_data) %>% 
+  dplyr::select(-brozek, -density, -free)
+
+g3.1 = lm(siri ~. , data = fat_data)
+par(mfrow = c(2,2))
+plot(g3.1)
+par(mfrow = c(1,1))
+cook = cooks.distance(g3.1)
+plot(cook, ylab = "Cook's statistics")
+text(50,cook[42], "42")
+```
+
+可發現第 42 個觀測值的 Cook's distance 遠大於其他觀測值，故推測其為 influential observation，將其移除後重新建構模型：
+$$g_{3.2}\ :\ siri\ \sim\ .\ \ \ ,\ \ \ subset = (cook<1)$$
+然後以 AIC 的方法做 model selection：
+
+```{r}
+g3.2 = lm(siri ~. , subset = (cook<1), data = fat_data)
+step(g3.2)
+```
+
+最後選出的模型為
+$$g_{3.3}\ :\ siri\ \sim\ age+weight+neck+abdom+hip+thigh+forearm+wrist$$
+然後檢查此模型的 diagnostics：
+
+```{r}
+g3.3 = lm(formula = siri ~ age + weight + neck + abdom + hip + thigh + 
+              forearm + wrist, data = fat_data, subset = (cook < 1))
+par(mfrow = c(2,2))
+plot(g3.3)
+```
+
+接著嘗試使用 Mallow's Cp statistics：
+
+```{r message=FALSE, warning=FALSE}
+library(leaps)
+x = fat_data[,-1][-42,]
+y = fat_data[,1][-42,]$siri
+gcp = leaps(x,y) # Cp
+par(mfrow = c(1,1))
+# plot(gcp$size, gcp$Cp, xlab = "p", ylab = "Cp")
+small = (gcp$Cp < 15)
+plot(gcp$size[small], gcp$Cp[small], xlab = "p", ylab = "Cp")
+abline(0,1)
+
+gcp.labels = 
+  apply(gcp$which, 1, 
+        function(x) paste(as.character(c(1:9,"A","B","C","D","E")[x]),collapse = ""))
+# text(gcp$size[small], gcp$Cp[small], gcp.labels[small])
+
+text(8, min(gcp$Cp[gcp$size==8]), 
+     gcp.labels[gcp$Cp==min(gcp$Cp[gcp$size==8])])
+text(9, min(gcp$Cp[gcp$size==9]), 
+     gcp.labels[gcp$Cp==min(gcp$Cp[gcp$size==9])]) # the same result as AIC
+```
+
+挑選 $C_p\ \approx\ p$ or $C_p\ <\ p$ 的模型，可發現 p=8,9 兩種情況下，$C_p$ 最小的模型即為 $g_{3.3}$ 和該模型扣除 *hip* 變數，其餘模型的使用變數較多較複雜，故不考慮選擇。
+
+再來使用 adjusted $R^2$：
+
+```{r}
+gadjr = leaps(x,y, method = "adjr2") # adjusted R square
+gadjr.labels = 
+  apply(gadjr$which, 1, 
+        function(x) paste(as.character(c(1:9,"A","B","C","D","E")[x]), collapse = ""))
+names(gadjr$adjr2) = gadjr.labels
+round(sort(gadjr$adjr2, decreasing = T)[1:8], 4)
+```
+
+adjusted $R^2$ 最大的模型為 $g_{3.3}$ 再加上變數 *biceps*，但其 $R_a^2$ 值只比第二大的模型 $g_{3.3}$ 高出 0.0002，且 $g_{3.3}$ 使用的變數更少。
+
+綜合 AIC, $C_p$, adjusted $R^2$ 三種方法，我會選擇模型
+$$g_{3.3}\ :\ siri\ \sim\ age+weight+neck+abdom+hip+thigh+forearm+wrist$$
+
+```{r}
+summary(g3.3)
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+

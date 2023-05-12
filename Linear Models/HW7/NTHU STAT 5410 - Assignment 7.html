@@ -1,0 +1,184 @@
+
+<!-- saved from url=(0082)http://www.stat.nthu.edu.tw/~swcheng/Teaching/stat5410/assignment/assignment7.html -->
+<html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office"><head><meta http-equiv="Content-Type" content="text/html; charset=Big5">
+<meta http-equiv="Content-Language" content="zh-tw">
+
+<meta name="GENERATOR" content="Microsoft FrontPage 6.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>NTHU STAT 5410 - Assignment 7</title>
+<style type="text/css">
+.style1 {
+	font-family: "Times New Roman", Times, serif;
+}
+.style2 {
+	color: #FF0000;
+	font-size: medium;
+}
+.style3 {
+	color: #FF0000;
+	font-weight: bold;
+	font-size: medium;
+}
+.style4 {
+	font-family: "Times New Roman", Times, serif;
+	color: #FF0000;
+	font-size: medium;
+}
+</style>
+</head>
+
+<body>
+
+<h1><font face="Times New Roman"><b>Assignment 7</b></font></h1>
+<ol>
+	<li><font face="Times New Roman"><a name="Problem 1"></a>An agronomist in 
+	Minnesota investigated rents for pasture used in dairy production. </font>
+	<font face="Courier New"><a href="http://www.stat.nthu.edu.tw/~swcheng/Teaching/stat5410/data/pasture.txt">Data</a> </font><font face="Times New Roman">was 
+	collected on 67 districts. The variables were: </font>
+	<dl>
+		<dt><font face="Times New Roman">&nbsp;&nbsp;&nbsp; </font>
+		<font face="Courier New">arable: </font><font face="Times New Roman">the 
+		rent per acre of arable land </font></dt>
+		<dt><font face="Times New Roman">&nbsp;&nbsp;&nbsp; </font>
+		<font face="Courier New">cows: </font><font face="Times New Roman">milk 
+		cows per square mile </font></dt>
+		<dt><font face="Times New Roman">&nbsp;&nbsp;&nbsp; </font>
+		<font face="Courier New">diff: </font><font face="Times New Roman">
+		difference between pasturage and arable land </font></dt>
+		<dt><font face="Times New Roman">&nbsp;&nbsp;&nbsp; </font>
+		<font face="Courier New">pasture: </font><font face="Times New Roman">
+		rent per acre of pasture</font></dt>
+	</dl>
+	<font face="Times New Roman">The purpose of the study is to model the 
+	pasture rent in terms of the other three variables. </font>
+	<ol>
+		<li type="a"><font face="Times New Roman">Use the Box-Cox method to 
+		determine a suitable transformation of the response. The main purpose of 
+		the model is explanation, not prediction. </font></li>
+		<li type="a"><font face="Times New Roman">Investigate whether polynomial 
+		terms for</font><font face="Courier New"> </font><tt>
+		<font face="Courier New">cows</font></tt><font face="Courier New">
+		</font><font face="Times New Roman">improve the fit. (Use your chosen 
+		transformation on the response from the question </font>
+		<font face="Courier New">a</font><font face="Times New Roman">) </font>
+		</li>
+		<li type="a"><font face="Times New Roman">Fit a broken-stick regression 
+		for</font><font face="Courier New"> </font><tt><font face="Courier New">
+		cows</font></tt><font face="Courier New"> </font>
+		<font face="Times New Roman">with a break at</font><font face="Courier New">
+		</font><tt><font face="Courier New">cows=25</font></tt><font face="Times New Roman">. 
+		Does this improve the fit over just a linear term? (Use your chosen 
+		transformation on the response from the question </font>
+		<font face="Courier New">a</font><font face="Times New Roman">) </font>
+		</li>
+	</ol>
+	</li>
+	<li><font face="Times New Roman"><a name="Problem 2"></a>Assessors 
+in the metropolitan area of Minneapolis-St. Paul are bound by law to value 
+farmland enrolled in a "Green Acres" program only with respect to its value as 
+productive farmland; the fact that a shopping center or an industrial park has 
+been built nearby cannot enter into the valuation. This creates difficulties 
+because almost all sales, which are the basis for setting assessed values, are 
+priced according to the development potential of the land, not its value as 
+farmland. As an aid to setting assessed values, a method of "equalizing" 
+valuation of land of comparable quality was needed. Some</font><font face="Courier New">
+	<a href="http://www.stat.nthu.edu.tw/~swcheng/Teaching/stat5410/data/assess.txt">data</a> </font><font face="Times New Roman">give one possible method of equalization, based on the computed soil 
+productivity score, a number between 1 and 100, with higher numbers 
+corresponding to better land. The unit of analysis is a township. For each 
+township with tillable land, the average soil productivity score</font><font face="Courier New"> P 
+	</font><font face="Times New Roman">and the 1981 
+and 1982 average assessed value per acre were recorded. The data are from four 
+counties located south and west of Minneapolis where development pressures have 
+little effect on land values. Come up with a method for the assessors to use in assessing farmland values 
+in the Minneapolis area using the soil productivity score.</font></li>
+	<li value="3"><font face="Times New Roman"><a name="Problem 3"></a> In the </font>
+	<font face="Courier New"><a href="http://www.stat.nthu.edu.tw/~swcheng/Teaching/stat5410/data/fat.txt">data</a></font><font face="Times New Roman">, 
+	percentage of body fat, age, weight, height, and ten body circumference 
+	measurements (e.g., abdomen) are recorded for 252 men. Body fat is estimated 
+	through an underwater weighing technique, but this is inconvenient to use 
+	widely. Develop a regression model that allows the estimation of body fat 
+	for men using only a scale and a measuring tape. The variables in the data 
+	are:</font><ul>
+		<li><font face="Times New Roman">case number </font></li>
+		<li><font face="Courier New">brozek</font><font face="Times New Roman">: 
+		percent body fat using Brozek's equation, 457/Density - 414.2 </font>
+		</li>
+		<li><font face="Courier New">siri</font><font face="Times New Roman">: 
+		percent body fat using Siri's equation, 495/Density - 450 </font></li>
+		<li><font face="Courier New">density</font><font face="Times New Roman">: 
+		density (gm/cm^3) </font></li>
+		<li><font face="Courier New">age</font><font face="Times New Roman">: 
+		age (yrs) </font></li>
+		<li><font face="Courier New">weight</font><font face="Times New Roman">: 
+		weight (lbs) </font></li>
+		<li><font face="Courier New">height</font><font face="Times New Roman">: 
+		height (inches) </font></li>
+		<li><font face="Courier New">adipos</font><font face="Times New Roman">: 
+		adiposity index = Weight/Height^2 (kg/m^2) </font></li>
+		<li><font face="Courier New">free</font><font face="Times New Roman">: 
+		fat free weight = (1 - fraction of body fat) * Weight, using Brozek's 
+		formula (lbs) </font></li>
+		<li><font face="Courier New">neck</font><font face="Times New Roman">: 
+		neck circumference (cm) </font></li>
+		<li><font face="Courier New">chest</font><font face="Times New Roman">: 
+		chest circumference (cm) </font></li>
+		<li><font face="Courier New">abdom</font><font face="Times New Roman">: 
+		abdomen circumference (cm) "at the umbilicus and level with the iliac 
+		crest" </font></li>
+		<li><font face="Courier New">hip</font><font face="Times New Roman">: 
+		hip circumference (cm) </font></li>
+		<li><font face="Courier New">thigh</font><font face="Times New Roman">: 
+		thigh circumference (cm) </font></li>
+		<li><font face="Courier New">knee</font><font face="Times New Roman">: 
+		knee circumference (cm) </font></li>
+		<li><font face="Courier New">ankle</font><font face="Times New Roman">: 
+		ankle circumference (cm) </font></li>
+		<li><font face="Courier New">biceps</font><font face="Times New Roman">: 
+		extended biceps circumference (cm) </font></li>
+		<li><font face="Courier New">forearm</font><font face="Times New Roman">: 
+		forearm circumference (cm) </font></li>
+		<li><font face="Courier New">wrist</font><font face="Times New Roman">: 
+		wrist circumference (cm) "distal to the styloid processes" </font></li>
+	</ul>
+	<font face="Times New Roman">Your model should predict %body fat according 
+	to Siri. You may not use Brozek's %body fat (</font><font face="Courier New">brozek</font><font face="Times New Roman">), 
+	Density (</font><font face="Courier New">density</font><font face="Times New Roman">) 
+	or Fat Free Weight (</font><font face="Courier New">free</font><font face="Times New Roman">) 
+	as predictors. Your answer should contain a description of the model you 
+	chose along with the variable selection process you used to find it. Note 
+	that outliers and influential points should be examined. You should aim to 
+	find a simple model that predicts the response well.</font></li>
+</ol>
+<p>　</p>
+
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+<p>　</p>
+
+
+
+</body></html>
