@@ -1,0 +1,78 @@
+---
+title: "品質管制 Homework 11"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+    number_sections: true
+author: "110024516 統研碩一 邱繼賢"
+---
+
+**5.17**
+
+For detecting the variance upward shifts, compute the charting statistics
+$$E_{n,v}\ =\ \lambda\ \frac{S_n^2}{\sigma_0^2}\ +\ (1-\lambda)\ E_{n-1,v}\ \text{, where }E_{0,v}=1\ ,\ \lambda=0.1\ ,\ \sigma_0=0.5$$
+A signal of upward process variance shift is given at the n-th time point if
+$$E_{n,v}\ >\ U\ =\ 1+\rho_U\ \sqrt{\frac{2\lambda}{(2-\lambda)(m-1)}[1-(1-\lambda)^{2n}]}\ \text{, where }\rho_U\ =\ 2.836\ \text{by Exercise 5.16}$$
+For detecting the mean shift, compute the charting statistics
+$$E_{n,m}\ =\ \lambda\ \overline{X}_n\ +\ (1-\lambda)\ E_{n-1,m}\ \text{, where }E_0\ =\ \mu_0\ =\ 1$$
+The control limits of the EWMA chart for detecting a mean shift is given by
+$$
+\begin{aligned}
+&U\ =\ \mu_0\ +\ \rho\sqrt{\frac{\lambda}{2-\lambda}}\ \frac{\sigma_0}{\sqrt{m}}\\
+&C\ =\ \mu_0\\
+&L\ =\ \mu_0\ -\ \rho\sqrt{\frac{\lambda}{2-\lambda}}\ \frac{\sigma_0}{\sqrt{m}}
+\end{aligned}
+$$
+The charting statistics, control limits, and the EWMA charts are shown as below.
+
+```{r echo=FALSE}
+library(knitr)
+batch = read.table("ex415.dat.txt", header = T)
+En_v = c()
+En_m = c()
+En_v[1] = 0.1*batch$xstd[1]^2/0.25+0.9*1
+En_m[1] = 0.1*batch$xbar[1] + 0.9*1
+for (i in 2:24) {
+    En_v[i] = 0.1*batch$xstd[i]^2/0.25 + 0.9*En_v[i-1]
+    En_m[i] = 0.1*batch$xbar[i] + 0.9*En_m[i-1]
+}
+U_v = c()
+u = 1+2.731*sqrt(0.1/(2-0.1))*(0.5/sqrt(5))
+l = 1-2.731*sqrt(0.1/(2-0.1))*(0.5/sqrt(5))
+c = 1
+for (i in 1:24) {
+    U_v[i] = 1+2.836*sqrt((2*0.1/((2-0.1)*4))*(1-0.9^(2*i)))
+    
+}
+df = data.frame(xbar = batch$xbar, 
+                sd = batch$xstd, 
+                Env = En_v, 
+                Uv = U_v, 
+                Enm = En_m, 
+                u = u, 
+                c = c, 
+                l = l)
+kable(df, 
+      col.names = c("$\\bar{X}_n$", "$S_n$", "$E_{n,v}$","$U_v$","$E_{n,m}$","$U_m$", "$C_m$","$L_m$"), digits = 4)
+```
+
+```{r echo=FALSE}
+par(mfrow = c(1,2), mar=c(5,4,4,4.5))
+plot(1:24, En_v, type="o",lty=1,pch=16,xlab="n",ylab=expression(E["n,v"]),
+     mgp=c(2,1,0),cex = 0.8)
+lines(1:24, U_v, lty = 2, cex = 0.8)
+axis(4, at = U_v[24], labels = "U", las = 2)
+
+plot(1:24, En_m, type="o",lty=1,pch=16,xlab="n",ylab=expression(E["n,m"]),
+     mgp=c(2,1,0),cex = 0.8, ylim = c(0.7,1.7))
+lines(1:24, rep(u,24), lty = 2, cex = 0.8)
+lines(1:24, rep(l,24), lty = 2, cex = 0.8)
+lines(1:24, rep(c,24), lty = 2, cex = 0.8)
+axis(4, at = c(u,l, c), labels = c("U=1.1401","L=0.8599","C=1"), las = 2)
+```
+
+We detect the upward variance shift at the 13th time point, detect the mean shift at the 13th time point.
+
