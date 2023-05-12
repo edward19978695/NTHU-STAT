@@ -1,0 +1,219 @@
+---
+title: "品質管制 Homework 11"
+header-includes:
+  - \usepackage{xeCJK}
+  - \setCJKmainfont{標楷體}
+output: 
+  pdf_document:
+    latex_engine: xelatex
+    number_sections: true
+author: "110024516 統研碩一 邱繼賢"
+---
+
+**5.20**  
+```{r include=FALSE}
+eta_1 = function(en, lambda, u) {
+    if (en < -u) {
+        return(en+(1-lambda)*u)
+    } else if (en > u) {
+        return(en-(1-lambda)*u)
+    } else {
+        return(lambda*en)
+    }
+}
+
+eta_2 = function(en, lambda, u) {
+    if ((abs(en) < u) | (abs(en) == u)) {
+        return(en*(1-(1-lambda)*(1-(en/u)^2)^2))
+    } else {
+        return(en)
+    }
+}
+
+Xi = c(0.0, -2.3, 0.6, -1.0, -0.2, 0.3, 0.5, -0.4, 0.3, -0.5,
+       -0.9, -0.5, 1.0, -0.9, 1.5, 1.4, 0.0, 2.2, 2.7, 0.7, -0.4, -0.8, -0.1, 0.0, 0.3, -1.0, 2.5, 1.3, 0.3, -0.3)
+```
+
+**(ii)**  
+$ARL_0=100\ ,\ \eta(e_n)=\eta_1(e_n)\ ,\ (\delta_1,\delta_2)=(1.0,4)\ ,\ \text{and}\ v=0.05$  
+$\text{by Table 5.6}\ \Rightarrow\ h=0.7874\ ,\ \lambda=0.1813\ ,\ u=2.5752$  
+The charting statistic of the AEWMA chart is defined by
+$$
+\begin{aligned}
+&A_n\ =\ A_{n-1}\ +\ \eta_1(e_n)\ ,\ \ \text{where }\ A_0\ =\ \mu_0\ =\ 0\ ,\ e_n\ =\ X_n\ -\ A_{n-1}
+\end{aligned}
+$$
+and 
+$$
+\eta_1(e_n)\ =\ 
+\left\{
+\begin{aligned}
+e_n\ +\ (1-\lambda)\ u\ \ \ ,\ \ &\text{if}\ \ e_n<-u\\
+\lambda\ e_n\ \ \ ,\ \ &\text{if}\ \ |e_n|\leq u\\
+e_n\ -\ (1-\lambda)\ u\ \ \ ,\ \ &\text{if}\ \ e_n>u
+\end{aligned}
+\right.
+$$
+The results of charting statistics are shown as below :
+
+```{r echo=FALSE}
+library(knitr)
+lambda2 = 0.1813
+u2 = 2.5752
+h2 = 0.7874
+
+An_2 = c()
+en_2 = c()
+en_2[1] = Xi[1]-0
+An_2[1] = 0+eta_1(en_2[1],lambda2,u2)
+
+for (i in 2:30) {
+    en_2[i] = Xi[i] - An_2[i-1]
+    An_2[i] = An_2[i-1] + eta_1(en_2[i],lambda2,u2)
+}
+
+U2 = 0+h2
+L2 = 0-h2
+
+charting_stat = data.frame(X = Xi, 
+                           en = en_2, 
+                           An = An_2)
+
+kable(charting_stat, col.names = c("$X_n$", "$e_n$", "$A_n$"), digits = 4)
+```
+
+The chart signals if $|A_n\ -\ \mu_0|\ >\ h$
+$$
+\Rightarrow
+\left\{
+\begin{aligned}
+&U\ =\ \mu_0\ +\ h\ =\ 0\ +\ 0.7874\ =\ 0.7874\\
+&L\ =\ \mu_0\ -\ h\ =\ 0\ -\ 0.7874\ =\ -0.7874
+\end{aligned}
+\right.
+$$
+
+```{r echo=FALSE}
+par(mfrow = c(1,1), mar=c(5,4,4,5))
+plot(1:30, An_2, type="o",lty=1,pch=16,xlab="n",ylab=expression(A[n]),
+     mgp=c(2,1,0),cex = 0.8, ylim = c(-1, 1))
+lines(1:30, rep(U2,30), lty = 2, cex = 0.8)
+lines(1:30, rep(L2,30), lty = 2, cex = 0.8)
+axis(4, at = c(U2,L2), labels = c("U=0.7874","L=-0.7874"), las = 2)
+```
+
+The AEWMA chart detects mean shift at the 19th time point.
+
+
+\newpage
+**(iv)**  
+$ARL_0=100\ ,\ \eta(e_n)=\eta_2(e_n)\ ,\ (\delta_1,\delta_2)=(0.25,4)\ ,\ \text{and}\ v=0.05$  
+$\text{by Table 5.6}\ \Rightarrow\ h=0.3542\ ,\ \lambda=0.0188\ ,\ u=12.6145$  
+The charting statistic of the AEWMA chart is defined by
+$$
+\begin{aligned}
+&A_n\ =\ A_{n-1}\ +\ \eta_2(e_n)\ ,\ \ \text{where }\ A_0\ =\ \mu_0\ =\ 0\ ,\ e_n\ =\ X_n\ -\ A_{n-1}
+\end{aligned}
+$$
+and 
+$$
+\eta_2(e_n)\ =\ 
+\left\{
+\begin{aligned}
+e_n\ [\ 1-(1-\lambda)(1-(\frac{e_n}{u})^2)^2\ ]\ \ \ ,\ \ &\text{if}\ \ |e_n|\leq u\\
+e_n\ \ \ ,\ \ &\text{otherwise}
+\end{aligned}
+\right.
+$$
+The results of charting statistics are shown as below :
+
+```{r echo=FALSE}
+lambda4 = 0.0188
+u4 = 12.6145
+h4 = 0.3542
+
+An_4 = c()
+en_4 = c()
+en_4[1] = Xi[1]-0
+An_4[1] = 0+eta_2(en_4[1],lambda4,u4)
+
+for (i in 2:30) {
+    en_4[i] = Xi[i] - An_4[i-1]
+    An_4[i] = An_4[i-1] + eta_2(en_4[i],lambda4,u4)
+}
+
+U4 = 0+h4
+L4 = 0-h4
+
+charting_stat4 = data.frame(X = Xi, 
+                            en = en_4, 
+                            an = An_4)
+kable(charting_stat4, col.names = c("$X_n$", "$e_n$", "$A_n$"), digits = 4)
+
+```
+
+The chart signals if $|A_n\ -\ \mu_0|\ >\ h$
+$$
+\Rightarrow
+\left\{
+\begin{aligned}
+&U\ =\ \mu_0\ +\ h\ =\ 0\ +\ 0.3542\ =\ 0.3542\\
+&L\ =\ \mu_0\ -\ h\ =\ 0\ -\ 0.3542\ =\ -0.3542
+\end{aligned}
+\right.
+$$
+
+```{r echo=FALSE}
+par(mfrow = c(1,1), mar=c(5,4,4,5))
+plot(1:30, An_4, type="o",lty=1,pch=16,xlab="n",ylab=expression(A[n]),
+     mgp=c(2,1,0),cex = 0.8, ylim = c(-1, 1))
+lines(1:30, rep(U4,30), lty = 2, cex = 0.8)
+lines(1:30, rep(L4,30), lty = 2, cex = 0.8)
+axis(4, at = c(U4,L4), labels = c("U=0.3542","L=-0.3542"), las = 2)
+```
+
+The AEWMA chart detects mean shift at the 19th time point.
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
