@@ -3,4 +3,4 @@
 (How to apply : 下載 110024516_GP_demo.R -> click Run App -> 匯入 train.csv)
 
 
-![image](https://github.com/edward19978695/NTHU-STAT/assets/133337791/95ecfd5e-f79b-4cc9-80ef-609c2eb00226)
+![image]([https://github.com/edward19978695/NTHU-STAT/assets/133337791/95ecfd5e-f79b-4cc9-80ef-609c2eb00226](https://github.com/edward19978695/NTHU-STAT/blob/main/Statistical%20Computing%20(with%20project)/Final%20Project/cov_function.jpg))
