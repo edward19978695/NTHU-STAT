@@ -9,4 +9,4 @@
 
 ![image](https://github.com/edward19978695/NTHU-STAT/blob/main/Practicing%20Statistics%20(with%20project)/%E5%B1%8F%E6%9D%B1%E7%B8%A3%E7%A4%BE%E6%9C%83%E8%99%95/%E8%9E%A2%E5%B9%95%E6%93%B7%E5%8F%96%E7%95%AB%E9%9D%A2%20(233).png)
 
-![image]()
+![image](https://github.com/edward19978695/NTHU-STAT/blob/main/Practicing%20Statistics%20(with%20project)/%E5%B1%8F%E6%9D%B1%E7%B8%A3%E7%A4%BE%E6%9C%83%E8%99%95/S__103186455.jpg)
