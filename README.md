@@ -23,8 +23,8 @@
 2. 深度學習 Deep Learning : A
 3. 統計學習 Statistical Learning : A+
 
-碩二下
+碩二下 (GPA : 4.30)
 
-1. 專題演講 Colloquium
-2. 統計實習 Practicing Statistics
-3. 時間序列分析 Time Series Analysis
+1. 專題演講 Colloquium : A+
+2. 統計實習 Practicing Statistics : A+
+3. 時間序列分析 Time Series Analysis : A+
